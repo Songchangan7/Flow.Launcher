@@ -162,9 +162,12 @@ namespace Flow.Launcher.Test.Plugins
         }
 
         [TestCase(@"c:\\", false)]
+        [TestCase(@"c:", true)]
         [TestCase(@"i:\", true)]
+        [TestCase(@"i:/", true)]
         [TestCase(@"\c:\", false)]
         [TestCase(@"cc:\", false)]
+        [TestCase(@"c://", false)]
         [TestCase(@"\\\SomeNetworkLocation\", false)]
         [TestCase(@"\\SomeNetworkLocation\", true)]
         [TestCase("RandomFile", false)]
@@ -215,6 +218,9 @@ namespace Flow.Launcher.Test.Plugins
 
         [TestCase(@"C:\NonExistentFolder\SomeApp", @"C:\NonExistentFolder\")]
         [TestCase(@"C:\NonExistentFolder\SomeApp\", @"C:\NonExistentFolder\SomeApp\")]
+        [TestCase(@"C:/NonExistentFolder/SomeApp", @"C:\NonExistentFolder\")]
+        [TestCase(@"C:/", @"C:\")]
+        [TestCase(@"C:", @"C:\")]
         public void WhenGivenAPath_ThenShouldReturnThePreviousDirectoryPathIfIncompleteOrOriginalString(
             string path, string expectedString)
         {

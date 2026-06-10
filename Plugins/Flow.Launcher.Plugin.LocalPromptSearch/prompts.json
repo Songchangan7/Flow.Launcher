@@ -1,0 +1,32 @@
+[
+  {
+    "id": "weekly-report",
+    "title": "周报总结模板",
+    "description": "用于整理本周工作并生成周报",
+    "tags": ["总结", "周报", "工作"],
+    "keywords": ["周报", "汇报", "工作总结"],
+    "content": "请根据以下工作内容，帮我整理一份结构清晰、表达专业的周报：",
+    "category": "办公",
+    "favorite": true
+  },
+  {
+    "id": "translate-en-zh",
+    "title": "英文翻译成中文",
+    "description": "将英文内容翻译为自然、准确的中文",
+    "tags": ["翻译", "英文", "中文"],
+    "keywords": ["翻译", "英译中", "英文"],
+    "content": "请将下面的英文内容翻译成自然、准确、符合中文表达习惯的中文：",
+    "category": "翻译",
+    "favorite": false
+  },
+  {
+    "id": "meeting-summary",
+    "title": "会议纪要整理模板",
+    "description": "把会议记录整理为清晰的纪要和待办事项",
+    "tags": ["会议", "纪要", "待办"],
+    "keywords": ["会议纪要", "会议总结", "action items"],
+    "content": "请根据以下会议内容，整理成一份包含背景、关键结论、待办事项和负责人建议的会议纪要：",
+    "category": "办公",
+    "favorite": false
+  }
+]

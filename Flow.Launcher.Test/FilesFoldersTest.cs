@@ -65,6 +65,14 @@ namespace Flow.Launcher.Test
             ClassicAssert.IsTrue(result);
         }
 
+        [TestCase(@"C:", @"C:\")]
+        [TestCase(@"C:/", @"C:\")]
+        [TestCase(@"C:/Users/Test", @"C:\Users\")]
+        public void GivenDriveOrForwardSlashPath_WhenNormalizePreviousDirectory_ThenShouldReturnExpectedPath(string path, string expectedResult)
+        {
+            ClassicAssert.AreEqual(expectedResult, FilesFolders.ReturnPreviousDirectoryIfIncompleteString(path));
+        }
+
         [Test]
         public void TryDeleteDirectoryRobust_WhenDirectoryIsEmpty_DeletesSuccessfully()
         {

@@ -360,7 +360,7 @@ namespace Flow.Launcher.Plugin.SharedCommands
         ///</summary>
         public static bool IsLocationPathString(this string querySearchString)
         {
-            if (string.IsNullOrEmpty(querySearchString) || querySearchString.Length < 3)
+            if (string.IsNullOrEmpty(querySearchString) || querySearchString.Length < 2)
                 return false;
 
             // // shared folder location, and not \\\location\
@@ -368,12 +368,18 @@ namespace Flow.Launcher.Plugin.SharedCommands
                 && querySearchString[2] != '\\')
                 return true;
 
-            // c:\
+            // c:, c:\, c:/
             if (char.IsLetter(querySearchString[0])
-                && querySearchString[1] == ':'
-                && querySearchString[2] == '\\')
+                && querySearchString[1] == ':')
             {
-                return querySearchString.Length == 3 || querySearchString[3] != '\\';
+                if (querySearchString.Length == 2)
+                    return true;
+
+                if (querySearchString[2] != '\\' && querySearchString[2] != '/')
+                    return false;
+
+                return querySearchString.Length == 3
+                       || (querySearchString[3] != '\\' && querySearchString[3] != '/');
             }
 
             return false;
@@ -405,10 +411,18 @@ namespace Flow.Launcher.Plugin.SharedCommands
         ///</summary>
         public static string ReturnPreviousDirectoryIfIncompleteString(string path)
         {
-            if (!path.EndsWith("\\"))
+            if (string.IsNullOrEmpty(path))
+                return path;
+
+            path = path.Replace(Path.AltDirectorySeparatorChar, Path.DirectorySeparatorChar);
+
+            if (path.Length == 2 && char.IsLetter(path[0]) && path[1] == ':')
+                return path + Path.DirectorySeparatorChar;
+
+            if (!path.EndsWith(Path.DirectorySeparatorChar))
             {
                 // not full path, get previous level directory string
-                var indexOfSeparator = path.LastIndexOf('\\');
+                var indexOfSeparator = path.LastIndexOf(Path.DirectorySeparatorChar);
 
                 return path[..(indexOfSeparator + 1)];
             }

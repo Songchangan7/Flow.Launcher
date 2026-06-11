@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Windows.Automation;
-using Flow.Launcher.Plugin.BrowserBookmark.Models;
+using Flow.Launcher.Plugin.BrowserTab.Models;
 
-namespace Flow.Launcher.Plugin.BrowserBookmark.Commands;
+namespace Flow.Launcher.Plugin.BrowserTab.Commands;
 
 internal static class ChromeTabLoader
 {
@@ -19,6 +19,8 @@ internal static class ChromeTabLoader
     internal static List<ChromeTab> LoadAllTabs()
     {
         var tabs = new List<ChromeTab>();
+        var recentUrls = ChromeSessionUrlLoader.LoadRecentUrls();
+        var urlIndex = 0;
 
         try
         {
@@ -42,8 +44,10 @@ internal static class ChromeTabLoader
                         continue;
                     }
 
-                    tabs.Add(new ChromeTab(title, (nint)window.Current.NativeWindowHandle, tabIndex));
+                    var url = urlIndex < recentUrls.Count ? recentUrls[urlIndex] : string.Empty;
+                    tabs.Add(new ChromeTab(title, (nint)window.Current.NativeWindowHandle, tabIndex, url));
                     tabIndex++;
+                    urlIndex++;
                 }
             }
         }

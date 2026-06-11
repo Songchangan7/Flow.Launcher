@@ -4,9 +4,9 @@ using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Automation;
 using Flow.Launcher.Infrastructure;
-using Flow.Launcher.Plugin.BrowserBookmark.Models;
+using Flow.Launcher.Plugin.BrowserTab.Models;
 
-namespace Flow.Launcher.Plugin.BrowserBookmark.Commands;
+namespace Flow.Launcher.Plugin.BrowserTab.Commands;
 
 internal static class ChromeTabActivator
 {

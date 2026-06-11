@@ -426,6 +426,14 @@ namespace Flow.Launcher.Plugin
         public void BackToQueryResults();
 
         /// <summary>
+        /// Requests Flow Launcher to restore focus to the window that was in the foreground
+        /// before it was invoked by hotkey. The restore will happen after the current action
+        /// finishes and the main window hides.
+        /// </summary>
+        /// <param name="pasteAfterRestore">Whether to send Ctrl+V after focus is restored.</param>
+        public void RestorePreviousForegroundWindow(bool pasteAfterRestore = false);
+
+        /// <summary>
         /// Displays a standardised Flow message box.
         /// </summary>
         /// <param name="messageBoxText">The message of the message box.</param>

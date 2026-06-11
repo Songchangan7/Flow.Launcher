@@ -10,6 +10,7 @@ using Flow.Launcher.Plugin.BrowserBookmark.Commands;
 using Flow.Launcher.Plugin.BrowserBookmark.Models;
 using Flow.Launcher.Plugin.BrowserBookmark.Views;
 using Flow.Launcher.Plugin.SharedCommands;
+using Flow.Launcher.Plugin.SharedModels;
 
 namespace Flow.Launcher.Plugin.BrowserBookmark;
 
@@ -26,6 +27,8 @@ public class Main : ISettingProvider, IPlugin, IReloadable, IPluginI18n, IContex
     private static List<Bookmark> _cachedBookmarks = new();
 
     private static bool _initialized = false;
+
+    private static string _currentQuery = string.Empty;
     
     public void Init(PluginInitContext context)
     {
@@ -85,57 +88,98 @@ public class Main : ISettingProvider, IPlugin, IReloadable, IPluginI18n, IContex
         }
 
         string param = query.Search.TrimStart();
+        _currentQuery = param;
 
         // Should top results be returned? (true if no search parameters have been passed)
         var topResults = string.IsNullOrEmpty(param);
 
         if (!topResults)
         {
-            // Since we mixed chrome and firefox bookmarks, we should order them again
-            return _cachedBookmarks
-                .Select(
-                    c => new Result
-                    {
-                        Title = c.Name,
-                        SubTitle = c.Url,
-                        IcoPath = !string.IsNullOrEmpty(c.FaviconPath) && File.Exists(c.FaviconPath)
-                            ? c.FaviconPath
-                            : @"Images\bookmark.png",
-                        Score = BookmarkLoader.MatchProgram(c, param).Score,
-                        Action = _ =>
-                        {
-                            Context.API.OpenUrl(c.Url);
+            var bookmarkResults = _cachedBookmarks
+                .Select(CreateBookmarkResult);
 
-                            return true;
-                        },
-                        ContextData = new BookmarkAttributes { Url = c.Url }
-                    }
-                )
+            var chromeTabResults = ChromeTabLoader.LoadAllTabs()
+                .Select(CreateChromeTabResult);
+
+            return bookmarkResults
+                .Concat(chromeTabResults)
+                .OrderByDescending(r => r.Score)
                 .Where(r => r.Score > 0)
                 .ToList();
         }
         else
         {
             return _cachedBookmarks
-                .Select(
-                    c => new Result
-                    {
-                        Title = c.Name,
-                        SubTitle = c.Url,
-                        IcoPath = !string.IsNullOrEmpty(c.FaviconPath) && File.Exists(c.FaviconPath)
-                            ? c.FaviconPath
-                            : @"Images\bookmark.png",
-                        Score = 5,
-                        Action = _ =>
-                        {
-                            Context.API.OpenUrl(c.Url);
-                            return true;
-                        },
-                        ContextData = new BookmarkAttributes { Url = c.Url }
-                    }
-                )
+                .Select(CreateBookmarkTopResult)
                 .ToList();
         }
+    }
+
+    private static Result CreateBookmarkResult(Bookmark bookmark)
+    {
+        var match = BookmarkLoader.MatchProgram(bookmark, _currentQuery);
+
+        return new Result
+        {
+            Title = bookmark.Name,
+            SubTitle = bookmark.Url,
+            IcoPath = !string.IsNullOrEmpty(bookmark.FaviconPath) && File.Exists(bookmark.FaviconPath)
+                ? bookmark.FaviconPath
+                : @"Images\bookmark.png",
+            Score = match.Score,
+            TitleHighlightData = match.MatchData,
+            Action = _ =>
+            {
+                Context.API.OpenUrl(bookmark.Url);
+
+                return true;
+            },
+            ContextData = new BookmarkAttributes { Url = bookmark.Url }
+        };
+    }
+
+    private static Result CreateBookmarkTopResult(Bookmark bookmark)
+    {
+        return new Result
+        {
+            Title = bookmark.Name,
+            SubTitle = bookmark.Url,
+            IcoPath = !string.IsNullOrEmpty(bookmark.FaviconPath) && File.Exists(bookmark.FaviconPath)
+                ? bookmark.FaviconPath
+                : @"Images\bookmark.png",
+            Score = 5,
+            Action = _ =>
+            {
+                Context.API.OpenUrl(bookmark.Url);
+                return true;
+            },
+            ContextData = new BookmarkAttributes { Url = bookmark.Url }
+        };
+    }
+
+    private static Result CreateChromeTabResult(ChromeTab tab)
+    {
+        var match = MatchChromeTab(tab, _currentQuery);
+
+        return new Result
+        {
+            Title = tab.Title,
+            SubTitle = "Jump to open Chrome tab",
+            IcoPath = @"Images\bookmark.png",
+            Score = match.Score + 10,
+            TitleHighlightData = match.MatchData,
+            Action = _ => ChromeTabActivator.Activate(tab),
+            ContextData = new ChromeTabAttributes
+            {
+                WindowHandle = tab.WindowHandle,
+                TabIndex = tab.TabIndex
+            }
+        };
+    }
+
+    private static MatchResult MatchChromeTab(ChromeTab tab, string queryString)
+    {
+        return Context.API.FuzzySearch(queryString, tab.Title);
     }
 
     private static readonly Channel<byte> _refreshQueue = Channel.CreateBounded<byte>(1);
@@ -227,6 +271,11 @@ public class Main : ISettingProvider, IPlugin, IReloadable, IPluginI18n, IContex
 
     public List<Result> LoadContextMenus(Result selectedResult)
     {
+        if (selectedResult.ContextData is not BookmarkAttributes bookmarkAttributes)
+        {
+            return new List<Result>();
+        }
+
         return new List<Result>()
         {
             new()
@@ -237,7 +286,7 @@ public class Main : ISettingProvider, IPlugin, IReloadable, IPluginI18n, IContex
                 {
                     try
                     {
-                        Context.API.CopyToClipboard(((BookmarkAttributes)selectedResult.ContextData).Url);
+                        Context.API.CopyToClipboard(bookmarkAttributes.Url);
 
                         return true;
                     }
@@ -257,6 +306,12 @@ public class Main : ISettingProvider, IPlugin, IReloadable, IPluginI18n, IContex
     internal class BookmarkAttributes
     {
         internal string Url { get; set; }
+    }
+
+    internal class ChromeTabAttributes
+    {
+        internal nint WindowHandle { get; set; }
+        internal int TabIndex { get; set; }
     }
 
     public void Dispose()

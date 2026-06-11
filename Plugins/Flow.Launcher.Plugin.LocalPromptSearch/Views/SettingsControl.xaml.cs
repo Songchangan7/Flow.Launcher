@@ -20,4 +20,8 @@ public partial class SettingsControl : UserControl
         _reloadAction();
         Main.Context.API.ShowMsg("Prompt 配置已保存", "新的模板文件路径已应用，并已重新加载。");
     }
+    private void PasteAfterCopy_OnChanged(object sender, RoutedEventArgs e)
+    {
+        Main.Context.API.SaveSettingJsonStorage<Settings>();
+    }
 }

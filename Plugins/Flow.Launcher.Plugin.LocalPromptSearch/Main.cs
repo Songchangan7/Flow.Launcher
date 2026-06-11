@@ -336,6 +336,7 @@ public class Main : IPlugin, ISettingProvider, IContextMenu
         try
         {
             Context.API.CopyToClipboard(prompt.Content, showDefaultNotification: false);
+            Context.API.RestorePreviousForegroundWindow(_settings.PasteAfterCopy);
             RegisterRecentPrompt(prompt.Id);
             Context.API.ShowMsg("已复制 Prompt", $"“{prompt.Title}” 已复制到剪贴板。");
             return true;
@@ -352,6 +353,7 @@ public class Main : IPlugin, ISettingProvider, IContextMenu
         try
         {
             Context.API.CopyToClipboard(prompt.Title, showDefaultNotification: false);
+            Context.API.RestorePreviousForegroundWindow(_settings.PasteAfterCopy);
             Context.API.ShowMsg("已复制标题", $"“{prompt.Title}”标题已复制到剪贴板。");
             return true;
         }

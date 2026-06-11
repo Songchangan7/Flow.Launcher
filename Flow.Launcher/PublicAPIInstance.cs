@@ -549,6 +549,9 @@ namespace Flow.Launcher
 
         public void BackToQueryResults() => _mainVM.BackToQueryResults();
 
+        public void RestorePreviousForegroundWindow(bool pasteAfterRestore = false) =>
+            _mainVM.RequestRestorePreviousForegroundWindow(pasteAfterRestore);
+
         public MessageBoxResult ShowMsgBox(string messageBoxText, string caption = "",
             MessageBoxButton button = MessageBoxButton.OK, MessageBoxImage icon = MessageBoxImage.None,
             MessageBoxResult defaultResult = MessageBoxResult.OK) =>

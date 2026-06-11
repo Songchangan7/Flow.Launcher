@@ -20,6 +20,12 @@
             Foreground="Gray"
             Text="留空时默认读取插件目录中的 prompts.json；也可以填写自定义绝对路径或带环境变量的路径。" 
             TextWrapping="Wrap" />
+        <CheckBox
+            Margin="0,0,0,12"
+            Checked="PasteAfterCopy_OnChanged"
+            Content="复制后自动粘贴到原输入框"
+            IsChecked="{Binding PasteAfterCopy, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+            Unchecked="PasteAfterCopy_OnChanged" />
         <Button
             Width="120"
             HorizontalAlignment="Left"

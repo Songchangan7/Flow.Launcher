@@ -27,6 +27,8 @@ using Flow.Launcher.Plugin.SharedCommands;
 using Flow.Launcher.Storage;
 using iNKORE.UI.WPF.Modern;
 using Microsoft.VisualStudio.Threading;
+using WindowsInput;
+using WindowsInput.Native;
 
 namespace Flow.Launcher.ViewModel
 {
@@ -66,6 +68,10 @@ namespace Flow.Launcher.ViewModel
         };
 
         private bool _taskbarShownByFlow = false;
+        private nint _previousForegroundWindowHandle = nint.Zero;
+        private bool _restorePreviousForegroundWindowRequested = false;
+        private bool _pasteAfterRestorePreviousForegroundWindow = false;
+        private readonly InputSimulator _inputSimulator = new();
 
         #endregion
 
@@ -1912,6 +1918,7 @@ namespace Flow.Launcher.ViewModel
         {
             if (!MainWindowVisibilityStatus)
             {
+                CachePreviousForegroundWindow();
                 Show();
             }
             else
@@ -2187,6 +2194,15 @@ namespace Flow.Launcher.ViewModel
             }
         }
 
+        public void RequestRestorePreviousForegroundWindow(bool pasteAfterRestore = false)
+        {
+            if (_previousForegroundWindowHandle != nint.Zero)
+            {
+                _restorePreviousForegroundWindowRequested = true;
+                _pasteAfterRestorePreviousForegroundWindow = pasteAfterRestore;
+            }
+        }
+
         public async void Hide(bool reset = true)
         {
             if (reset)
@@ -2267,6 +2283,59 @@ namespace Flow.Launcher.ViewModel
             MainWindowVisibilityStatus = false;
             MainWindowVisibility = Visibility.Collapsed;
             VisibilityChanged?.Invoke(this, new VisibilityChangedEventArgs { IsVisible = false });
+
+            await RestorePreviousForegroundWindowAsync();
+        }
+
+        private void CachePreviousForegroundWindow()
+        {
+            var foregroundWindow = Win32Helper.GetForegroundWindow();
+            var mainWindowHandle = Application.Current?.MainWindow is MainWindow mainWindow
+                ? Win32Helper.GetWindowHandle(mainWindow)
+                : nint.Zero;
+
+            if (foregroundWindow != nint.Zero && foregroundWindow != mainWindowHandle)
+            {
+                _previousForegroundWindowHandle = foregroundWindow;
+            }
+        }
+
+        private async Task RestorePreviousForegroundWindowAsync()
+        {
+            if (!_restorePreviousForegroundWindowRequested)
+            {
+                return;
+            }
+
+            _restorePreviousForegroundWindowRequested = false;
+            var handle = _previousForegroundWindowHandle;
+            if (handle == nint.Zero)
+            {
+                return;
+            }
+
+            try
+            {
+                await Task.Delay(80);
+                Win32Helper.SetForegroundWindow(handle);
+
+                if (_pasteAfterRestorePreviousForegroundWindow)
+                {
+                    await Task.Delay(80);
+                    if (Win32Helper.IsForegroundWindow(handle))
+                    {
+                        _inputSimulator.Keyboard.ModifiedKeyStroke(VirtualKeyCode.LCONTROL, VirtualKeyCode.VK_V);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                App.API.LogException(ClassName, "Failed to restore previous foreground window", e);
+            }
+            finally
+            {
+                _pasteAfterRestorePreviousForegroundWindow = false;
+            }
         }
 
 #pragma warning restore VSTHRD100 // Avoid async void methods

@@ -20,5 +20,20 @@ public class Settings : BaseModel
         }
     }
 
+    private bool _pasteAfterCopy;
+
+    public bool PasteAfterCopy
+    {
+        get => _pasteAfterCopy;
+        set
+        {
+            if (_pasteAfterCopy != value)
+            {
+                _pasteAfterCopy = value;
+                OnPropertyChanged();
+            }
+        }
+    }
+
     public List<string> RecentPromptIds { get; set; } = [];
 }

@@ -1,12 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows.Controls;
 using Flow.Launcher.Plugin;
 using Flow.Launcher.Plugin.Note.Views;
 
 namespace Flow.Launcher.Plugin.Note;
 
-public class Main : IPlugin, IPluginI18n, IContextMenu
+public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
 {
     internal const string IcoPathValue = "Images/app.png";
     private const int RecentNotesLimit = 8;
@@ -19,14 +20,17 @@ public class Main : IPlugin, IPluginI18n, IContextMenu
     private NoteResultFactory _resultFactory = null!;
     private NoteContextMenuBuilder _contextMenuBuilder = null!;
     private NoteQueryResultBuilder _queryResultBuilder = null!;
+    private Settings _settings = null!;
     private string _editingNoteId = string.Empty;
 
     public void Init(PluginInitContext context)
     {
         Context = context;
+        _settings = context.API.LoadSettingJsonStorage<Settings>();
         _repository = new NoteRepository(
             context.CurrentPluginMetadata.PluginDirectory,
-            context.CurrentPluginMetadata.PluginSettingsDirectoryPath);
+            context.CurrentPluginMetadata.PluginSettingsDirectoryPath,
+            _settings.NotesFilePath);
         _repository.Load();
         _resultFactory = new NoteResultFactory(context.CurrentPluginMetadata.ActionKeyword);
         _contextMenuBuilder = new NoteContextMenuBuilder();
@@ -37,8 +41,14 @@ public class Main : IPlugin, IPluginI18n, IContextMenu
             SaveNote,
             OpenEditorForNewNote,
             UpdateEditingNote,
+            GetStoragePathText,
             ClearEditingState,
             context.CurrentPluginMetadata.ActionKeyword);
+    }
+
+    public Control CreateSettingPanel()
+    {
+        return new SettingsControl(_settings, ReloadRepositoryFromSettings, GetStoragePathText);
     }
 
     public List<Result> Query(Query query)
@@ -338,5 +348,18 @@ public class Main : IPlugin, IPluginI18n, IContextMenu
         return count == 1
             ? Localize.flowlauncher_plugin_note_count_single()
             : Localize.flowlauncher_plugin_note_count_multiple(count);
+    }
+
+    private string GetStoragePathText()
+    {
+        return _repository.NotesFilePath;
+    }
+
+    private void ReloadRepositoryFromSettings()
+    {
+        _repository.UpdateStoragePath(_settings.NotesFilePath);
+        _repository.Load();
+        Context.API.SaveSettingJsonStorage<Settings>();
+        Context.API.ReQuery();
     }
 }

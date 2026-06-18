@@ -12,7 +12,7 @@ public sealed class NoteRepository
     private const string SampleNotesFileName = "notes.sample.json";
 
     private readonly string _pluginDirectory;
-    private readonly string _storageDirectory;
+    private readonly string _defaultStorageDirectory;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
@@ -20,15 +20,17 @@ public sealed class NoteRepository
     };
 
     private List<NoteItem> _notes = [];
+    private string _customNotesFilePath;
 
-    public string NotesFilePath => Path.Combine(_storageDirectory, NotesFileName);
+    public string NotesFilePath => ResolveNotesFilePath();
 
     public string LoadError { get; private set; } = string.Empty;
 
-    public NoteRepository(string pluginDirectory, string storageDirectory)
+    public NoteRepository(string pluginDirectory, string storageDirectory, string customNotesFilePath)
     {
         _pluginDirectory = pluginDirectory;
-        _storageDirectory = storageDirectory;
+        _defaultStorageDirectory = storageDirectory;
+        _customNotesFilePath = customNotesFilePath?.Trim() ?? string.Empty;
     }
 
     public IReadOnlyList<NoteItem> Notes => _notes;
@@ -159,6 +161,11 @@ public sealed class NoteRepository
             .ToList();
     }
 
+    public void UpdateStoragePath(string customNotesFilePath)
+    {
+        _customNotesFilePath = customNotesFilePath?.Trim() ?? string.Empty;
+    }
+
     public void Load()
     {
         LoadError = string.Empty;
@@ -166,7 +173,7 @@ public sealed class NoteRepository
 
         try
         {
-            Directory.CreateDirectory(_storageDirectory);
+            Directory.CreateDirectory(GetNotesDirectoryPath());
 
             if (!File.Exists(NotesFilePath))
             {
@@ -396,7 +403,7 @@ public sealed class NoteRepository
 
     private void PersistNotes()
     {
-        Directory.CreateDirectory(_storageDirectory);
+        Directory.CreateDirectory(GetNotesDirectoryPath());
 
         if (!File.Exists(NotesFilePath))
         {
@@ -405,6 +412,21 @@ public sealed class NoteRepository
 
         var json = JsonSerializer.Serialize(_notes, _jsonOptions);
         File.WriteAllText(NotesFilePath, json);
+    }
+
+    private string ResolveNotesFilePath()
+    {
+        if (!string.IsNullOrWhiteSpace(_customNotesFilePath))
+        {
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(_customNotesFilePath));
+        }
+
+        return Path.Combine(_defaultStorageDirectory, NotesFileName);
+    }
+
+    private string GetNotesDirectoryPath()
+    {
+        return Path.GetDirectoryName(NotesFilePath) ?? _defaultStorageDirectory;
     }
 
     private void SortNotesInPlace()

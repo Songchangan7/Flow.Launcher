@@ -13,6 +13,7 @@ internal sealed class NoteQueryResultBuilder
     private readonly Func<string, bool> _saveNote;
     private readonly Func<string, bool> _openEditorForNewNote;
     private readonly Func<string, bool> _updateEditingNote;
+    private readonly Func<string> _getStoragePathText;
     private readonly Action _cancelEdit;
     private readonly string _actionKeyword;
 
@@ -23,6 +24,7 @@ internal sealed class NoteQueryResultBuilder
         Func<string, bool> saveNote,
         Func<string, bool> openEditorForNewNote,
         Func<string, bool> updateEditingNote,
+        Func<string> getStoragePathText,
         Action cancelEdit,
         string actionKeyword)
     {
@@ -32,6 +34,7 @@ internal sealed class NoteQueryResultBuilder
         _saveNote = saveNote;
         _openEditorForNewNote = openEditorForNewNote;
         _updateEditingNote = updateEditingNote;
+        _getStoragePathText = getStoragePathText;
         _cancelEdit = cancelEdit;
         _actionKeyword = actionKeyword;
     }
@@ -166,7 +169,7 @@ internal sealed class NoteQueryResultBuilder
         results.Add(new Result
         {
             Title = Localize.flowlauncher_plugin_note_storage_ready_title(),
-            SubTitle = Localize.flowlauncher_plugin_note_storage_ready_subtitle(_getNotesCountText()),
+            SubTitle = $"{Localize.flowlauncher_plugin_note_storage_ready_subtitle(_getNotesCountText())} {_getStoragePathText()}",
             IcoPath = Main.IcoPathValue,
             Score = 900,
             Action = _ => false

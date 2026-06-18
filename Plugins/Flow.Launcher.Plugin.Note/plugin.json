@@ -1,0 +1,12 @@
+{
+  "ID": "7FA14D42B7884FD7A8F86E1B1CC95E41",
+  "ActionKeyword": "n",
+  "Name": "Quick Note",
+  "Description": "Capture and browse quick notes",
+  "Author": "OpenAI, Flow-Launcher",
+  "Version": "1.0.0",
+  "Language": "csharp",
+  "Website": "https://github.com/Flow-Launcher/Flow.Launcher",
+  "ExecuteFileName": "Flow.Launcher.Plugin.Note.dll",
+  "IcoPath": "Images\\app.png"
+}

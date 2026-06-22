@@ -12,9 +12,21 @@
         <TextBlock
             Margin="0,0,0,6"
             Text="笔记保存文件路径" />
-        <TextBox
-            Margin="0,0,0,8"
-            Text="{Binding NotesFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+        <Grid Margin="0,0,0,8">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox
+                Grid.Column="0"
+                Margin="0,0,8,0"
+                Text="{Binding NotesFilePath, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
+            <Button
+                Grid.Column="1"
+                MinWidth="72"
+                Click="BrowseButton_OnClick"
+                Content="浏览" />
+        </Grid>
         <TextBlock
             Margin="0,0,0,8"
             Foreground="Gray"

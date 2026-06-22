@@ -119,5 +119,4 @@
     <system:String x:Key="flowlauncher_plugin_note_error_copy_title">Failed to copy note</system:String>
     <system:String x:Key="flowlauncher_plugin_note_error_delete_title">Failed to delete note</system:String>
     <system:String x:Key="flowlauncher_plugin_note_error_no_edit_session">There is no active note edit session.</system:String>
-
 </ResourceDictionary>

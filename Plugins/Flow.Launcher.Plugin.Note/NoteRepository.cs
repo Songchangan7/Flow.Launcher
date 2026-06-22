@@ -22,9 +22,16 @@ public sealed class NoteRepository
     private List<NoteItem> _notes = [];
     private string _customNotesFilePath;
 
+    public string CustomNotesFilePath => _customNotesFilePath;
+
     public string NotesFilePath => ResolveNotesFilePath();
 
     public string LoadError { get; private set; } = string.Empty;
+
+    public NoteRepository(string pluginDirectory, string storageDirectory)
+        : this(pluginDirectory, storageDirectory, string.Empty)
+    {
+    }
 
     public NoteRepository(string pluginDirectory, string storageDirectory, string customNotesFilePath)
     {
@@ -161,9 +168,68 @@ public sealed class NoteRepository
             .ToList();
     }
 
-    public void UpdateStoragePath(string customNotesFilePath)
+    public NoteStorageChangeResult UpdateStoragePath(string customNotesFilePath)
     {
-        _customNotesFilePath = customNotesFilePath?.Trim() ?? string.Empty;
+        var nextCustomNotesFilePath = customNotesFilePath?.Trim() ?? string.Empty;
+        var previousCustomNotesFilePath = _customNotesFilePath;
+        var previousPath = NotesFilePath;
+        var nextPath = ResolveNotesFilePath(nextCustomNotesFilePath);
+
+        if (PathsEqual(previousPath, nextPath))
+        {
+            _customNotesFilePath = nextCustomNotesFilePath;
+            Load();
+
+            return new NoteStorageChangeResult
+            {
+                Succeeded = string.IsNullOrWhiteSpace(LoadError),
+                PathChanged = false,
+                PreviousPath = previousPath,
+                CurrentPath = NotesFilePath,
+                CurrentNoteCount = _notes.Count,
+                ErrorMessage = LoadError
+            };
+        }
+
+        try
+        {
+            var sourceNotes = CloneNotes(_notes);
+            var targetNotes = LoadNotesFromPath(nextPath, initializeIfMissing: false);
+            var mergedNotes = MergeNotes(targetNotes, sourceNotes);
+
+            PersistNotesToPath(nextPath, mergedNotes);
+
+            _customNotesFilePath = nextCustomNotesFilePath;
+            _notes = mergedNotes;
+            LoadError = string.Empty;
+
+            return new NoteStorageChangeResult
+            {
+                Succeeded = true,
+                PathChanged = true,
+                NotesMerged = targetNotes.Count > 0,
+                PreviousPath = previousPath,
+                CurrentPath = NotesFilePath,
+                MigratedNoteCount = sourceNotes.Count,
+                ExistingTargetNoteCount = targetNotes.Count,
+                CurrentNoteCount = _notes.Count
+            };
+        }
+        catch (Exception ex)
+        {
+            _customNotesFilePath = previousCustomNotesFilePath;
+            LoadError = $"Failed to migrate notes: {ex.Message}";
+
+            return new NoteStorageChangeResult
+            {
+                Succeeded = false,
+                PathChanged = false,
+                PreviousPath = previousPath,
+                CurrentPath = previousPath,
+                CurrentNoteCount = _notes.Count,
+                ErrorMessage = LoadError
+            };
+        }
     }
 
     public void Load()
@@ -173,20 +239,8 @@ public sealed class NoteRepository
 
         try
         {
-            Directory.CreateDirectory(GetNotesDirectoryPath());
-
-            if (!File.Exists(NotesFilePath))
-            {
-                InitializeNotesFile();
-            }
-
-            var json = File.ReadAllText(NotesFilePath);
-            var notes = JsonSerializer.Deserialize<List<NoteItem>>(json, _jsonOptions) ?? [];
-            _notes = notes
-                .Where(note => !string.IsNullOrWhiteSpace(note.Content))
-                .Select(Normalize)
-                .ToList();
-            SortNotesInPlace();
+            _notes = LoadNotesFromPath(NotesFilePath, initializeIfMissing: true);
+            _notes = SortNotes(_notes);
         }
         catch (Exception ex)
         {
@@ -388,37 +442,34 @@ public sealed class NoteRepository
         }
     }
 
-    private void InitializeNotesFile()
+    private void InitializeNotesFile(string notesFilePath)
     {
         var samplePath = Path.Combine(_pluginDirectory, SampleNotesFileName);
         if (File.Exists(samplePath))
         {
-            File.Copy(samplePath, NotesFilePath, overwrite: false);
+            File.Copy(samplePath, notesFilePath, overwrite: false);
         }
         else
         {
-            File.WriteAllText(NotesFilePath, "[]");
+            File.WriteAllText(notesFilePath, "[]");
         }
     }
 
     private void PersistNotes()
     {
-        Directory.CreateDirectory(GetNotesDirectoryPath());
-
-        if (!File.Exists(NotesFilePath))
-        {
-            InitializeNotesFile();
-        }
-
-        var json = JsonSerializer.Serialize(_notes, _jsonOptions);
-        File.WriteAllText(NotesFilePath, json);
+        PersistNotesToPath(NotesFilePath, _notes);
     }
 
     private string ResolveNotesFilePath()
     {
-        if (!string.IsNullOrWhiteSpace(_customNotesFilePath))
+        return ResolveNotesFilePath(_customNotesFilePath);
+    }
+
+    private string ResolveNotesFilePath(string customNotesFilePath)
+    {
+        if (!string.IsNullOrWhiteSpace(customNotesFilePath))
         {
-            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(_customNotesFilePath));
+            return Path.GetFullPath(Environment.ExpandEnvironmentVariables(customNotesFilePath));
         }
 
         return Path.Combine(_defaultStorageDirectory, NotesFileName);
@@ -431,11 +482,97 @@ public sealed class NoteRepository
 
     private void SortNotesInPlace()
     {
-        _notes = _notes
+        _notes = SortNotes(_notes);
+    }
+
+    private static List<NoteItem> SortNotes(IEnumerable<NoteItem> notes)
+    {
+        return notes
             .OrderByDescending(note => !note.IsArchived)
             .ThenByDescending(note => note.IsPinned)
             .ThenByDescending(note => note.UpdatedAt)
             .ToList();
+    }
+
+    private List<NoteItem> LoadNotesFromPath(string notesFilePath, bool initializeIfMissing)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(notesFilePath) ?? _defaultStorageDirectory);
+
+        if (!File.Exists(notesFilePath))
+        {
+            if (!initializeIfMissing)
+            {
+                return [];
+            }
+
+            InitializeNotesFile(notesFilePath);
+        }
+
+        var json = File.ReadAllText(notesFilePath);
+        var notes = JsonSerializer.Deserialize<List<NoteItem>>(json, _jsonOptions) ?? [];
+        return notes
+            .Where(note => !string.IsNullOrWhiteSpace(note.Content))
+            .Select(CloneAndNormalize)
+            .ToList();
+    }
+
+    private void PersistNotesToPath(string notesFilePath, IReadOnlyCollection<NoteItem> notes)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(notesFilePath) ?? _defaultStorageDirectory);
+
+        if (!File.Exists(notesFilePath))
+        {
+            InitializeNotesFile(notesFilePath);
+        }
+
+        var json = JsonSerializer.Serialize(SortNotes(CloneNotes(notes)), _jsonOptions);
+        File.WriteAllText(notesFilePath, json);
+    }
+
+    private static List<NoteItem> MergeNotes(IEnumerable<NoteItem> existingTargetNotes, IEnumerable<NoteItem> sourceNotes)
+    {
+        var merged = new Dictionary<string, NoteItem>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var note in existingTargetNotes)
+        {
+            merged[note.Id] = CloneAndNormalize(note);
+        }
+
+        foreach (var note in sourceNotes)
+        {
+            var candidate = CloneAndNormalize(note);
+            if (!merged.TryGetValue(candidate.Id, out var existing) ||
+                candidate.UpdatedAt >= existing.UpdatedAt)
+            {
+                merged[candidate.Id] = candidate;
+            }
+        }
+
+        return SortNotes(merged.Values);
+    }
+
+    private static List<NoteItem> CloneNotes(IEnumerable<NoteItem> notes)
+    {
+        return notes.Select(CloneAndNormalize).ToList();
+    }
+
+    private static NoteItem CloneAndNormalize(NoteItem note)
+    {
+        return Normalize(new NoteItem
+        {
+            Id = note.Id,
+            Content = note.Content,
+            CreatedAt = note.CreatedAt,
+            UpdatedAt = note.UpdatedAt,
+            IsPinned = note.IsPinned,
+            IsArchived = note.IsArchived,
+            Tags = note.Tags?.ToList() ?? []
+        });
+    }
+
+    private static bool PathsEqual(string left, string right)
+    {
+        return string.Equals(left, right, StringComparison.OrdinalIgnoreCase);
     }
 
     private static NoteItem Normalize(NoteItem note)

@@ -672,4 +672,121 @@ public class NoteRepositoryTests
         ClassicAssert.AreEqual(1, notes.Count);
         ClassicAssert.AreEqual("active work note #work", notes[0].Content);
     }
+
+    [Test]
+    public void GivenStoragePathChangesWhenUpdateStoragePathThenMigratesExistingNotesToNewPath()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        var customDirectory = Path.Combine(_testRoot, "custom");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "migrate me",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.UpdateStoragePath(Path.Combine(customDirectory, "notes.json"));
+
+        ClassicAssert.IsTrue(result.Succeeded);
+        ClassicAssert.IsTrue(result.PathChanged);
+        ClassicAssert.IsFalse(result.NotesMerged);
+        ClassicAssert.AreEqual(1, result.MigratedNoteCount);
+        ClassicAssert.AreEqual(1, repository.Notes.Count);
+        ClassicAssert.AreEqual("migrate me", repository.Notes[0].Content);
+        ClassicAssert.IsTrue(File.Exists(Path.Combine(customDirectory, "notes.json")));
+        ClassicAssert.IsTrue(File.ReadAllText(Path.Combine(customDirectory, "notes.json")).Contains("migrate me"));
+    }
+
+    [Test]
+    public void GivenTargetPathHasNotesWhenUpdateStoragePathThenMergesSourceAndTargetNotes()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        var customDirectory = Path.Combine(_testRoot, "custom");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        Directory.CreateDirectory(customDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "source-note",
+                "Content": "source note",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+        File.WriteAllText(Path.Combine(customDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "target-note",
+                "Content": "target note",
+                "CreatedAt": "2026-06-17T00:00:00Z",
+                "UpdatedAt": "2026-06-17T00:00:00Z",
+                "IsPinned": true
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.UpdateStoragePath(Path.Combine(customDirectory, "notes.json"));
+
+        ClassicAssert.IsTrue(result.Succeeded);
+        ClassicAssert.IsTrue(result.PathChanged);
+        ClassicAssert.IsTrue(result.NotesMerged);
+        ClassicAssert.AreEqual(1, result.MigratedNoteCount);
+        ClassicAssert.AreEqual(1, result.ExistingTargetNoteCount);
+        ClassicAssert.AreEqual(2, repository.Notes.Count);
+        ClassicAssert.IsTrue(File.ReadAllText(Path.Combine(customDirectory, "notes.json")).Contains("source note"));
+        ClassicAssert.IsTrue(File.ReadAllText(Path.Combine(customDirectory, "notes.json")).Contains("target note"));
+    }
+
+    [Test]
+    public void GivenStoragePathUnchangedWhenUpdateStoragePathThenDoesNotMigrateAgain()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "stay here",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.UpdateStoragePath(string.Empty);
+
+        ClassicAssert.IsTrue(result.Succeeded);
+        ClassicAssert.IsFalse(result.PathChanged);
+        ClassicAssert.AreEqual(1, result.CurrentNoteCount);
+        ClassicAssert.AreEqual("stay here", repository.Notes[0].Content);
+        ClassicAssert.IsTrue(File.ReadAllText(Path.Combine(storageDirectory, "notes.json")).Contains("stay here"));
+    }
 }

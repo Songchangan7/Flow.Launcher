@@ -48,7 +48,7 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
 
     public Control CreateSettingPanel()
     {
-        return new SettingsControl(_settings, ReloadRepositoryFromSettings, GetStoragePathText);
+        return new SettingsControl(_settings, ApplyStoragePathChange, GetStoragePathText);
     }
 
     public List<Result> Query(Query query)
@@ -355,11 +355,13 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
         return _repository.NotesFilePath;
     }
 
-    private void ReloadRepositoryFromSettings()
+    private NoteStorageChangeResult ApplyStoragePathChange()
     {
-        _repository.UpdateStoragePath(_settings.NotesFilePath);
-        _repository.Load();
+        var result = _repository.UpdateStoragePath(_settings.NotesFilePath);
+        _settings.NotesFilePath = _repository.CustomNotesFilePath;
+
         Context.API.SaveSettingJsonStorage<Settings>();
         Context.API.ReQuery();
+        return result;
     }
 }

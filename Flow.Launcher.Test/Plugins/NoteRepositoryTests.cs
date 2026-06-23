@@ -95,6 +95,28 @@ public class NoteRepositoryTests
     }
 
     [Test]
+    public void GivenChineseContentWhenSaveNoteThenPersistsReadableChineseJson()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        File.WriteAllText(Path.Combine(pluginDirectory, "notes.sample.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.SaveNote("前端语境下，gutter是什么", out var savedNote, out var errorMessage);
+        var json = File.ReadAllText(repository.NotesFilePath);
+
+        ClassicAssert.IsTrue(result);
+        ClassicAssert.AreEqual(string.Empty, errorMessage);
+        ClassicAssert.IsNotNull(savedNote);
+        ClassicAssert.AreEqual("前端语境下，gutter是什么", savedNote.Content);
+        ClassicAssert.IsTrue(json.Contains("前端语境下，gutter是什么"));
+        ClassicAssert.IsFalse(json.Contains("\\u524D"));
+    }
+
+    [Test]
     public void GivenWhitespaceContentWhenSaveNoteThenReturnsFalse()
     {
         var pluginDirectory = Path.Combine(_testRoot, "plugin");

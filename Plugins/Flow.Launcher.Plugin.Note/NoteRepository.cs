@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
 using System.Text.Json;
 
 namespace Flow.Launcher.Plugin.Note;
@@ -15,6 +16,7 @@ public sealed class NoteRepository
     private readonly string _defaultStorageDirectory;
     private readonly JsonSerializerOptions _jsonOptions = new()
     {
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
         PropertyNameCaseInsensitive = true,
         WriteIndented = true
     };

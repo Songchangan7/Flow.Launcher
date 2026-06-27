@@ -117,6 +117,12 @@
     <SolidColorBrush x:Key="InfoBarBD" Color="#19000000" />
     <SolidColorBrush x:Key="InfoBarWarningIcon" Color="#fce100" />
     <SolidColorBrush x:Key="InfoBarWarningBG" Color="#433519" />
+    <SolidColorBrush x:Key="InlineToastSuccessBackground" Color="#1F3A1F" />
+    <SolidColorBrush x:Key="InlineToastSuccessBorder" Color="#2F6A32" />
+    <SolidColorBrush x:Key="InlineToastSuccessForeground" Color="#A7F3A1" />
+    <SolidColorBrush x:Key="InlineToastErrorBackground" Color="#442726" />
+    <SolidColorBrush x:Key="InlineToastErrorBorder" Color="#C42B1C" />
+    <SolidColorBrush x:Key="InlineToastErrorForeground" Color="#FFB3AD" />
 
     <!--  Resource for TitleBar  -->
     <SolidColorBrush x:Key="MouseOverWindowCloseButtonForegroundBrush" Color="#ffffff" />

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace Flow.Launcher.Plugin.Note;
 
@@ -18,4 +19,10 @@ public sealed class NoteItem
     public bool IsArchived { get; set; }
 
     public List<string> Tags { get; set; } = [];
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string Source { get; set; } = string.Empty;
+
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public DateTime? LastViewedAt { get; set; }
 }

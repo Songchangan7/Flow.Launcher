@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
+using System.Windows.Threading;
 using Flow.Launcher.Plugin;
 using Flow.Launcher.Plugin.Note.Views;
 
@@ -16,12 +17,16 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
 
     internal static PluginInitContext Context { get; private set; } = null!;
 
+    internal static NoteRepository ActiveRepository { get; private set; } = null!;
+
     private NoteRepository _repository = null!;
     private NoteResultFactory _resultFactory = null!;
     private NoteContextMenuBuilder _contextMenuBuilder = null!;
     private NoteQueryResultBuilder _queryResultBuilder = null!;
     private Settings _settings = null!;
     private string _editingNoteId = string.Empty;
+    private SettingsControl _settingsControl;
+    private bool _selectNotesManagerOnSettingsOpen;
 
     public void Init(PluginInitContext context)
     {
@@ -31,6 +36,7 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
             context.CurrentPluginMetadata.PluginDirectory,
             context.CurrentPluginMetadata.PluginSettingsDirectoryPath,
             _settings.NotesFilePath);
+        ActiveRepository = _repository;
         _repository.Load();
         _resultFactory = new NoteResultFactory(context.CurrentPluginMetadata.ActionKeyword);
         _contextMenuBuilder = new NoteContextMenuBuilder();
@@ -38,17 +44,25 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
             _repository,
             _resultFactory,
             GetNotesCountText,
-            SaveNote,
+            content => SaveNote(content),
             OpenEditorForNewNote,
             UpdateEditingNote,
             GetStoragePathText,
             ClearEditingState,
+            OpenNotesManager,
             context.CurrentPluginMetadata.ActionKeyword);
     }
 
     public Control CreateSettingPanel()
     {
-        return new SettingsControl(_settings, ApplyStoragePathChange, GetStoragePathText);
+        _settingsControl = new SettingsControl(_settings, _repository, ApplyStoragePathChange, GetStoragePathText);
+        if (_selectNotesManagerOnSettingsOpen)
+        {
+            _settingsControl.SelectNotesManagerTab();
+            _selectNotesManagerOnSettingsOpen = false;
+        }
+
+        return _settingsControl;
     }
 
     public List<Result> Query(Query query)
@@ -101,6 +115,42 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
             DeleteNote);
     }
 
+    private bool OpenNotesManager()
+    {
+        _selectNotesManagerOnSettingsOpen = true;
+        var opened = Context.API.OpenPluginSettingsWindow(Context.CurrentPluginMetadata.ID);
+        if (!opened)
+        {
+            _selectNotesManagerOnSettingsOpen = false;
+            return false;
+        }
+
+        if (_settingsControl is not null)
+        {
+            _settingsControl.SelectNotesManagerTab();
+            _selectNotesManagerOnSettingsOpen = false;
+        }
+        else
+        {
+            System.Windows.Application.Current?.Dispatcher.BeginInvoke(
+                SelectNotesManagerTabIfPending,
+                DispatcherPriority.Loaded);
+        }
+
+        return false;
+    }
+
+    private void SelectNotesManagerTabIfPending()
+    {
+        if (!_selectNotesManagerOnSettingsOpen)
+        {
+            return;
+        }
+
+        _settingsControl?.SelectNotesManagerTab();
+        _selectNotesManagerOnSettingsOpen = false;
+    }
+
     private List<Result> BuildHomeResults()
     {
         return _queryResultBuilder.BuildHomeResults(RecentNotesLimit, BrowseNotesLimit, TagListLimit);
@@ -129,19 +179,25 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
         return _queryResultBuilder.BuildSearchAndSaveResults(trimmedContent, matches);
     }
 
-    private bool SaveNote(string content)
+    private bool SaveNote(string content, string source = NoteSources.Launcher)
     {
-        if (_repository.SaveNote(content, out var savedNote, out var errorMessage))
+        if (_repository.SaveNote(content, out var savedNote, out var errorMessage, source))
         {
             ClearEditingState();
-            Context.API.ShowMsg(
+            Context.API.ShowMainWindowNotification(
                 Localize.flowlauncher_plugin_note_saved_title(),
                 NotePresentation.BuildSavedSubtitle(savedNote.Content),
-                IcoPathValue);
-            return true;
+                false,
+                2200,
+                true);
+            return false;
         }
 
-        Context.API.ShowMsgError(Localize.flowlauncher_plugin_note_error_save_title(), errorMessage);
+        Context.API.ShowMainWindowNotification(
+            Localize.flowlauncher_plugin_note_error_save_title(),
+            errorMessage,
+            true,
+            4000);
         return false;
     }
 
@@ -159,14 +215,20 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
         if (_repository.UpdateNote(editingNoteId, content, out var updatedNote, out var errorMessage))
         {
             ClearEditingState();
-            Context.API.ShowMsg(
+            Context.API.ShowMainWindowNotification(
                 Localize.flowlauncher_plugin_note_updated_title(),
                 NotePresentation.BuildSavedSubtitle(updatedNote.Content),
-                IcoPathValue);
-            return true;
+                false,
+                2200,
+                true);
+            return false;
         }
 
-        Context.API.ShowMsgError(Localize.flowlauncher_plugin_note_error_update_title(), errorMessage);
+        Context.API.ShowMainWindowNotification(
+            Localize.flowlauncher_plugin_note_error_update_title(),
+            errorMessage,
+            true,
+            4000);
         return false;
     }
 
@@ -186,6 +248,7 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
     {
         try
         {
+            ActiveRepository?.RecordLastViewed(note.Id, out _);
             Context.API.CopyToClipboard(note.Content, showDefaultNotification: false);
             Context.API.ShowMsg(
                 Localize.flowlauncher_plugin_note_copied_title(),
@@ -284,12 +347,13 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
     private bool BeginEdit(NoteItem note)
     {
         _editingNoteId = note.Id;
+        var editableContent = NoteRepository.BuildEditableContent(note);
         Context.API.ShowMsg(
             Localize.flowlauncher_plugin_note_edit_mode_title(),
             Localize.flowlauncher_plugin_note_edit_mode_subtitle(NotePresentation.BuildSavedSubtitle(note.Content)),
             IcoPathValue);
         Context.API.BackToQueryResults();
-        Context.API.ChangeQuery($"{Context.CurrentPluginMetadata.ActionKeyword} {note.Content}", true);
+        Context.API.ChangeQuery($"{Context.CurrentPluginMetadata.ActionKeyword} {editableContent}", true);
         return false;
     }
 
@@ -306,16 +370,17 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
             return false;
         }
 
-        return SaveNote(window.EditedContent);
+        return SaveNote(window.EditedContent, NoteSources.Editor);
     }
 
     private bool OpenEditorForExistingNote(NoteItem note)
     {
+        _repository.RecordLastViewed(note.Id, out _);
         var window = new NoteEditorWindow(
             Localize.flowlauncher_plugin_note_editor_edit_title(),
             Localize.flowlauncher_plugin_note_editor_edit_subtitle(),
             Localize.flowlauncher_plugin_note_editor_save_edit(),
-            note.Content);
+            NoteRepository.BuildEditableContent(note));
 
         if (window.ShowDialog() != true)
         {
@@ -325,15 +390,21 @@ public class Main : IPlugin, IPluginI18n, IContextMenu, ISettingProvider
         if (_repository.UpdateNote(note.Id, window.EditedContent, out var updatedNote, out var errorMessage))
         {
             ClearEditingState();
-            Context.API.ShowMsg(
+            Context.API.ShowMainWindowNotification(
                 Localize.flowlauncher_plugin_note_updated_title(),
                 NotePresentation.BuildSavedSubtitle(updatedNote.Content),
-                IcoPathValue);
+                false,
+                2200,
+                true);
             Context.API.ReQuery();
-            return true;
+            return false;
         }
 
-        Context.API.ShowMsgError(Localize.flowlauncher_plugin_note_error_update_title(), errorMessage);
+        Context.API.ShowMainWindowNotification(
+            Localize.flowlauncher_plugin_note_error_update_title(),
+            errorMessage,
+            true,
+            4000);
         return false;
     }
 

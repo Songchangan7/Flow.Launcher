@@ -15,6 +15,7 @@ internal sealed class NoteQueryResultBuilder
     private readonly Func<string, bool> _updateEditingNote;
     private readonly Func<string> _getStoragePathText;
     private readonly Action _cancelEdit;
+    private readonly Func<bool> _openNotesManager;
     private readonly string _actionKeyword;
 
     internal NoteQueryResultBuilder(
@@ -26,6 +27,7 @@ internal sealed class NoteQueryResultBuilder
         Func<string, bool> updateEditingNote,
         Func<string> getStoragePathText,
         Action cancelEdit,
+        Func<bool> openNotesManager,
         string actionKeyword)
     {
         _repository = repository;
@@ -36,6 +38,7 @@ internal sealed class NoteQueryResultBuilder
         _updateEditingNote = updateEditingNote;
         _getStoragePathText = getStoragePathText;
         _cancelEdit = cancelEdit;
+        _openNotesManager = openNotesManager;
         _actionKeyword = actionKeyword;
     }
 
@@ -65,6 +68,8 @@ internal sealed class NoteQueryResultBuilder
             Localize.flowlauncher_plugin_note_pinned_section_subtitle(), 980, _repository.GetPinnedNotes(recentNotesLimit));
         AddSection(results, Localize.flowlauncher_plugin_note_today_section_title(),
             Localize.flowlauncher_plugin_note_today_section_subtitle(), 960, _repository.GetNotesCreatedOn(DateTime.Now, recentNotesLimit));
+        AddSection(results, Localize.flowlauncher_plugin_note_week_section_title(),
+            Localize.flowlauncher_plugin_note_week_section_subtitle(), 950, _repository.GetNotesCreatedThisWeek(recentNotesLimit));
         AddSection(results, Localize.flowlauncher_plugin_note_recent_section_title(),
             Localize.flowlauncher_plugin_note_recent_section_subtitle(), 940, _repository.GetRecentNotes(recentNotesLimit));
 
@@ -223,31 +228,44 @@ internal sealed class NoteQueryResultBuilder
                 Score = 992,
                 Action = _ => _openEditorForNewNote(string.Empty)
             },
+            new Result
+            {
+                Title = Localize.flowlauncher_plugin_note_shortcut_manager_title(),
+                SubTitle = Localize.flowlauncher_plugin_note_shortcut_manager_subtitle(),
+                IcoPath = Main.IcoPathValue,
+                Score = 991,
+                Action = _ => _openNotesManager()
+            },
             _resultFactory.CreateViewJumpResult(
                 Localize.flowlauncher_plugin_note_shortcut_all_title(),
                 Localize.flowlauncher_plugin_note_shortcut_all_subtitle(stats.TotalNotesCount),
                 NoteSpecialViewKeywords.All,
-                991),
+                990),
             _resultFactory.CreateViewJumpResult(
                 Localize.flowlauncher_plugin_note_shortcut_pinned_title(),
                 Localize.flowlauncher_plugin_note_shortcut_pinned_subtitle(stats.PinnedNotesCount),
                 NoteSpecialViewKeywords.Pinned,
-                990),
+                989),
             _resultFactory.CreateViewJumpResult(
                 Localize.flowlauncher_plugin_note_shortcut_today_title(),
                 Localize.flowlauncher_plugin_note_shortcut_today_subtitle(stats.TodayNotesCount),
                 NoteSpecialViewKeywords.Today,
-                989),
+                988),
+            _resultFactory.CreateViewJumpResult(
+                Localize.flowlauncher_plugin_note_shortcut_week_title(),
+                Localize.flowlauncher_plugin_note_shortcut_week_subtitle(stats.WeekNotesCount),
+                NoteSpecialViewKeywords.Week,
+                987),
             _resultFactory.CreateViewJumpResult(
                 Localize.flowlauncher_plugin_note_shortcut_recent_title(),
                 Localize.flowlauncher_plugin_note_shortcut_recent_subtitle(stats.RecentNotesCount),
                 NoteSpecialViewKeywords.Recent,
-                988),
+                986),
             _resultFactory.CreateViewJumpResult(
                 Localize.flowlauncher_plugin_note_shortcut_archived_title(),
                 Localize.flowlauncher_plugin_note_shortcut_archived_subtitle(stats.ArchivedNotesCount),
                 NoteSpecialViewKeywords.Archived,
-                987)
+                985)
         ];
     }
 
@@ -287,17 +305,23 @@ internal sealed class NoteQueryResultBuilder
             NoteSpecialViewKeywords.Today,
             992);
 
+        AddNavigationIfNeeded(results, currentView, NoteSpecialViewKeywords.IsWeek,
+            Localize.flowlauncher_plugin_note_shortcut_week_title(),
+            Localize.flowlauncher_plugin_note_shortcut_week_subtitle(_repository.GetNotesCreatedThisWeek(browseNotesLimit).Count),
+            NoteSpecialViewKeywords.Week,
+            991);
+
         AddNavigationIfNeeded(results, currentView, NoteSpecialViewKeywords.IsRecent,
             Localize.flowlauncher_plugin_note_shortcut_recent_title(),
             Localize.flowlauncher_plugin_note_shortcut_recent_subtitle(_repository.GetRecentNotes(browseNotesLimit).Count),
             NoteSpecialViewKeywords.Recent,
-            991);
+            990);
 
         AddNavigationIfNeeded(results, currentView, NoteSpecialViewKeywords.IsArchived,
             Localize.flowlauncher_plugin_note_shortcut_archived_title(),
             Localize.flowlauncher_plugin_note_shortcut_archived_subtitle(_repository.GetArchivedNotes(browseNotesLimit).Count),
             NoteSpecialViewKeywords.Archived,
-            990);
+            989);
 
         return results;
     }

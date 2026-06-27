@@ -1,7 +1,7 @@
 [
   {
     "Id": "sample-note-1",
-    "Content": "Welcome to Quick Note. #welcome",
+    "Content": "Welcome to Quick Note.",
     "CreatedAt": "2026-06-16T00:00:00Z",
     "UpdatedAt": "2026-06-16T00:00:00Z",
     "IsPinned": false,

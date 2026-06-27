@@ -72,6 +72,7 @@ namespace Flow.Launcher.ViewModel
         private bool _restorePreviousForegroundWindowRequested = false;
         private bool _pasteAfterRestorePreviousForegroundWindow = false;
         private readonly InputSimulator _inputSimulator = new();
+        private CancellationTokenSource _inlineNotificationSource;
 
         #endregion
 
@@ -928,6 +929,7 @@ namespace Flow.Launcher.ViewModel
 
         public Visibility ProgressBarVisibility { get; set; }
         public Visibility MainWindowVisibility { get; set; }
+        public Visibility InlineNotificationVisibility { get; set; } = Visibility.Collapsed;
 
         // This is to be used for determining the visibility status of the main window instead of MainWindowVisibility
         // because it is more accurate and reliable representation than using Visibility as a condition check
@@ -940,6 +942,9 @@ namespace Flow.Launcher.ViewModel
         public Visibility SearchIconVisibility { get; set; }
         public double ClockPanelOpacity { get; set; } = 1;
         public double SearchIconOpacity { get; set; } = 1;
+        public string InlineNotificationTitle { get; set; } = string.Empty;
+        public string InlineNotificationSubTitle { get; set; } = string.Empty;
+        public bool InlineNotificationIsError { get; set; }
 
         private string _placeholderText;
         public string PlaceholderText
@@ -2205,6 +2210,9 @@ namespace Flow.Launcher.ViewModel
 
         public async void Hide(bool reset = true)
         {
+            CancelInlineNotification();
+            InlineNotificationVisibility = Visibility.Collapsed;
+
             if (reset)
             {
                 lastHistoryIndex = 1;
@@ -2285,6 +2293,63 @@ namespace Flow.Launcher.ViewModel
             VisibilityChanged?.Invoke(this, new VisibilityChangedEventArgs { IsVisible = false });
 
             await RestorePreviousForegroundWindowAsync();
+        }
+
+        public async void ShowMainWindowNotification(string title, string subTitle = "", bool isError = false, int durationMs = 2200, bool hideMainWindowAfter = false)
+        {
+            if (!Application.Current.Dispatcher.CheckAccess())
+            {
+                Application.Current.Dispatcher.Invoke(() => ShowMainWindowNotification(title, subTitle, isError, durationMs, hideMainWindowAfter));
+                return;
+            }
+
+            CancelInlineNotification();
+            _inlineNotificationSource = new CancellationTokenSource();
+            var token = _inlineNotificationSource.Token;
+
+            InlineNotificationTitle = title ?? string.Empty;
+            InlineNotificationSubTitle = subTitle ?? string.Empty;
+            InlineNotificationIsError = isError;
+            InlineNotificationVisibility = Visibility.Visible;
+
+            try
+            {
+                await Task.Delay(durationMs, token);
+            }
+            catch (TaskCanceledException)
+            {
+                return;
+            }
+
+            if (token.IsCancellationRequested)
+            {
+                return;
+            }
+
+            if (hideMainWindowAfter && MainWindowVisibilityStatus)
+            {
+                Hide();
+            }
+            else
+            {
+                InlineNotificationVisibility = Visibility.Collapsed;
+            }
+        }
+
+        private void CancelInlineNotification()
+        {
+            if (_inlineNotificationSource is null)
+            {
+                return;
+            }
+
+            if (!_inlineNotificationSource.IsCancellationRequested)
+            {
+                _inlineNotificationSource.Cancel();
+            }
+
+            _inlineNotificationSource.Dispose();
+            _inlineNotificationSource = null;
         }
 
         private void CachePreviousForegroundWindow()
@@ -2452,6 +2517,7 @@ namespace Flow.Launcher.ViewModel
                 {
                     _updateSource?.Dispose();
                     _dialogJumpSource?.Dispose();
+                    CancelInlineNotification();
                     _resultsUpdateChannelWriter?.Complete();
                     if (_resultsViewUpdateTask?.IsCompleted == true)
                     {

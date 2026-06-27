@@ -158,6 +158,17 @@ namespace Flow.Launcher.Plugin
         void ShowMsgWithButton(string title, string buttonText, Action buttonAction, string subTitle, string iconPath, bool useMainWindowAsOwner = true);
 
         /// <summary>
+        /// Show a lightweight in-window notification near the main search window.
+        /// It is intended for short success or error feedback that should stay in the user's current focus area.
+        /// </summary>
+        /// <param name="title">Notification title</param>
+        /// <param name="subTitle">Optional notification subtitle</param>
+        /// <param name="isError">Whether to use the error visual style</param>
+        /// <param name="durationMs">How long to keep the notification visible</param>
+        /// <param name="hideMainWindowAfter">Whether to hide the main window after the notification duration ends</param>
+        void ShowMainWindowNotification(string title, string subTitle = "", bool isError = false, int durationMs = 2200, bool hideMainWindowAfter = false);
+
+        /// <summary>
         /// Open setting dialog
         /// </summary>
         void OpenSettingDialog();

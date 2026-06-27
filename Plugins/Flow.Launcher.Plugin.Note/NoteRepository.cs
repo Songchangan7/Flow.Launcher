@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 
 namespace Flow.Launcher.Plugin.Note;
 
@@ -11,6 +12,9 @@ public sealed class NoteRepository
 {
     private const string NotesFileName = "notes.json";
     private const string SampleNotesFileName = "notes.sample.json";
+    private static readonly Regex TagTokenRegex = new(@"(^|[\s])#(?<tag>[^\s#]+)", RegexOptions.Compiled);
+    private static readonly Regex RepeatedSpacesRegex = new(@"[ \t]{2,}", RegexOptions.Compiled);
+    private static readonly Regex SpacesAroundNewLineRegex = new(@"[ \t]*(\r\n|\r|\n)[ \t]*", RegexOptions.Compiled);
 
     private readonly string _pluginDirectory;
     private readonly string _defaultStorageDirectory;
@@ -57,6 +61,11 @@ public sealed class NoteRepository
             .ThenByDescending(note => note.UpdatedAt)
             .Take(maxCount)
             .ToList();
+    }
+
+  public IReadOnlyList<NoteItem> GetAllNotes()
+    {
+        return CloneNotes(_notes);
     }
 
     public IReadOnlyList<NoteItem> GetAllNotes(int maxCount)
@@ -132,6 +141,35 @@ public sealed class NoteRepository
             .OrderByDescending(note => note.UpdatedAt)
             .Take(maxCount)
             .ToList();
+    }
+
+    public IReadOnlyList<NoteItem> GetNotesCreatedThisWeek(int maxCount)
+    {
+        if (maxCount <= 0)
+        {
+            return [];
+        }
+
+        var (weekStart, weekEndExclusive) = GetCurrentWeekRangeLocal();
+        return _notes
+            .Where(note => !note.IsArchived)
+            .Where(note =>
+            {
+                var created = note.CreatedAt.ToLocalTime();
+                return created >= weekStart && created < weekEndExclusive;
+            })
+            .OrderByDescending(note => note.UpdatedAt)
+            .Take(maxCount)
+            .ToList();
+    }
+
+    public static (DateTime WeekStart, DateTime WeekEndExclusive) GetCurrentWeekRangeLocal(DateTime? referenceLocalTime = null)
+    {
+        var reference = (referenceLocalTime ?? DateTime.Now).Date;
+        var firstDayOfWeek = System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.FirstDayOfWeek;
+        var dayOffset = (7 + (reference.DayOfWeek - firstDayOfWeek)) % 7;
+        var weekStart = reference.AddDays(-dayOffset);
+        return (weekStart, weekStart.AddDays(7));
     }
 
     public IReadOnlyList<NoteItem> GetNotesByTag(string tag, int maxCount)
@@ -251,7 +289,162 @@ public sealed class NoteRepository
         }
     }
 
-    public bool SaveNote(string content, out NoteItem savedNote, out string errorMessage)
+    public void Reload()
+    {
+        Load();
+    }
+
+    public NoteImportResult ImportTextNotes(IReadOnlyList<string> rawContents, bool skipDuplicates)
+    {
+        if (rawContents is null || rawContents.Count == 0)
+        {
+            return new NoteImportResult { Succeeded = true };
+        }
+
+        var imported = 0;
+        var skippedDuplicate = 0;
+        var skippedEmpty = 0;
+        var existingContents = new HashSet<string>(
+            _notes.Select(note => note.Content.Trim()),
+            StringComparer.Ordinal);
+
+        try
+        {
+            foreach (var raw in rawContents)
+            {
+                var normalized = NoteTextImportParser.NormalizeChunk(raw);
+                if (string.IsNullOrWhiteSpace(normalized))
+                {
+                    skippedEmpty++;
+                    continue;
+                }
+
+                var trimmed = normalized.Trim();
+                if (skipDuplicates && existingContents.Contains(trimmed))
+                {
+                    skippedDuplicate++;
+                    continue;
+                }
+
+                var parsedContent = ParseContent(trimmed);
+                if (string.IsNullOrWhiteSpace(parsedContent.Content))
+                {
+                    skippedEmpty++;
+                    continue;
+                }
+
+                var now = DateTime.UtcNow;
+                var note = Normalize(new NoteItem
+                {
+                    Id = Guid.NewGuid().ToString("N"),
+                    Content = parsedContent.Content,
+                    CreatedAt = now,
+                    UpdatedAt = now,
+                    IsPinned = false,
+                    IsArchived = false,
+                    Tags = parsedContent.Tags,
+                    Source = NoteSources.ImportText
+                });
+
+                _notes.Insert(0, note);
+                existingContents.Add(parsedContent.Content.Trim());
+                imported++;
+            }
+
+            if (imported > 0)
+            {
+                SortNotesInPlace();
+                PersistNotes();
+                LoadError = string.Empty;
+            }
+
+            return new NoteImportResult
+            {
+                Succeeded = true,
+                ImportedCount = imported,
+                SkippedDuplicateCount = skippedDuplicate,
+                SkippedEmptyCount = skippedEmpty
+            };
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Failed to import notes: {ex.Message}";
+            LoadError = errorMessage;
+            return new NoteImportResult
+            {
+                Succeeded = false,
+                ErrorMessage = errorMessage,
+                ImportedCount = imported,
+                SkippedDuplicateCount = skippedDuplicate,
+                SkippedEmptyCount = skippedEmpty
+            };
+        }
+    }
+
+    public NoteImportResult ImportJsonNotes(string filePath)
+    {
+        if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+        {
+            return new NoteImportResult
+            {
+                Succeeded = false,
+                ErrorMessage = "Notes file not found."
+            };
+        }
+
+        try
+        {
+            var incoming = LoadNotesFromPath(filePath, initializeIfMissing: false);
+            foreach (var note in incoming)
+            {
+                if (string.IsNullOrWhiteSpace(note.Source))
+                {
+                    note.Source = NoteSources.ImportJson;
+                }
+            }
+
+            var imported = 0;
+            var updated = 0;
+            var existingById = _notes.ToDictionary(note => note.Id, StringComparer.OrdinalIgnoreCase);
+
+            foreach (var note in incoming)
+            {
+                if (!existingById.TryGetValue(note.Id, out var existing))
+                {
+                    imported++;
+                    continue;
+                }
+
+                if (note.UpdatedAt >= existing.UpdatedAt)
+                {
+                    updated++;
+                }
+            }
+
+            _notes = MergeNotes(_notes, incoming);
+            PersistNotes();
+            LoadError = string.Empty;
+
+            return new NoteImportResult
+            {
+                Succeeded = true,
+                ImportedCount = imported,
+                UpdatedCount = updated
+            };
+        }
+        catch (Exception ex)
+        {
+            var errorMessage = $"Failed to import notes: {ex.Message}";
+            LoadError = errorMessage;
+            return new NoteImportResult
+            {
+                Succeeded = false,
+                ErrorMessage = errorMessage
+            };
+        }
+    }
+
+    public bool SaveNote(string content, out NoteItem savedNote, out string errorMessage, string source = NoteSources.Launcher)
     {
         savedNote = null;
         errorMessage = string.Empty;
@@ -263,18 +456,26 @@ public sealed class NoteRepository
             return false;
         }
 
+        var parsedContent = ParseContent(trimmedContent);
+        if (string.IsNullOrWhiteSpace(parsedContent.Content))
+        {
+            errorMessage = "Note content cannot be empty.";
+            return false;
+        }
+
         try
         {
             var now = DateTime.UtcNow;
             var note = Normalize(new NoteItem
             {
                 Id = Guid.NewGuid().ToString("N"),
-                Content = trimmedContent,
+                Content = parsedContent.Content,
                 CreatedAt = now,
                 UpdatedAt = now,
                 IsPinned = false,
                 IsArchived = false,
-                Tags = ExtractTags(trimmedContent)
+                Tags = parsedContent.Tags,
+                Source = NormalizeSource(source)
             });
 
             _notes.Insert(0, note);
@@ -309,6 +510,13 @@ public sealed class NoteRepository
             return false;
         }
 
+        var parsedContent = ParseContent(trimmedContent);
+        if (string.IsNullOrWhiteSpace(parsedContent.Content))
+        {
+            errorMessage = "Note content cannot be empty.";
+            return false;
+        }
+
         var note = _notes.FirstOrDefault(x => string.Equals(x.Id, noteId, StringComparison.OrdinalIgnoreCase));
         if (note is null)
         {
@@ -318,8 +526,8 @@ public sealed class NoteRepository
 
         try
         {
-            note.Content = trimmedContent;
-            note.Tags = ExtractTags(trimmedContent);
+            note.Content = parsedContent.Content;
+            note.Tags = MergeTags(note.Tags, parsedContent.Tags);
             note.UpdatedAt = DateTime.UtcNow;
             SortNotesInPlace();
             PersistNotes();
@@ -403,6 +611,42 @@ public sealed class NoteRepository
         }
     }
 
+    public bool SetTags(string noteId, IReadOnlyList<string> tags, out NoteItem updatedNote, out string errorMessage)
+    {
+        updatedNote = null;
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(noteId))
+        {
+            errorMessage = "Note id cannot be empty.";
+            return false;
+        }
+
+        var note = _notes.FirstOrDefault(x => string.Equals(x.Id, noteId, StringComparison.OrdinalIgnoreCase));
+        if (note is null)
+        {
+            errorMessage = "Note not found.";
+            return false;
+        }
+
+        try
+        {
+            note.Tags = NormalizeTagList(tags);
+            note.UpdatedAt = DateTime.UtcNow;
+            SortNotesInPlace();
+            PersistNotes();
+            updatedNote = note;
+            LoadError = string.Empty;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to update note tags: {ex.Message}";
+            LoadError = errorMessage;
+            return false;
+        }
+    }
+
     public bool SetArchived(string noteId, bool isArchived, out NoteItem updatedNote, out string errorMessage)
     {
         updatedNote = null;
@@ -439,6 +683,38 @@ public sealed class NoteRepository
         catch (Exception ex)
         {
             errorMessage = $"Failed to update note archive state: {ex.Message}";
+            LoadError = errorMessage;
+            return false;
+        }
+    }
+
+    public bool RecordLastViewed(string noteId, out string errorMessage)
+    {
+        errorMessage = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(noteId))
+        {
+            errorMessage = "Note id cannot be empty.";
+            return false;
+        }
+
+        var note = _notes.FirstOrDefault(x => string.Equals(x.Id, noteId, StringComparison.OrdinalIgnoreCase));
+        if (note is null)
+        {
+            errorMessage = "Note not found.";
+            return false;
+        }
+
+        try
+        {
+            note.LastViewedAt = DateTime.UtcNow;
+            PersistNotes();
+            LoadError = string.Empty;
+            return true;
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Failed to update note view state: {ex.Message}";
             LoadError = errorMessage;
             return false;
         }
@@ -568,7 +844,9 @@ public sealed class NoteRepository
             UpdatedAt = note.UpdatedAt,
             IsPinned = note.IsPinned,
             IsArchived = note.IsArchived,
-            Tags = note.Tags?.ToList() ?? []
+            Tags = note.Tags?.ToList() ?? [],
+            Source = note.Source,
+            LastViewedAt = note.LastViewedAt
         });
     }
 
@@ -582,6 +860,7 @@ public sealed class NoteRepository
         note.Id ??= string.Empty;
         note.Content ??= string.Empty;
         note.Tags ??= [];
+        note.Source = NormalizeSource(note.Source);
 
         if (string.IsNullOrWhiteSpace(note.Id))
         {
@@ -598,28 +877,89 @@ public sealed class NoteRepository
             note.UpdatedAt = note.CreatedAt;
         }
 
-        note.Tags = note.Tags
-            .Select(NormalizeTag)
-            .Where(tag => !string.IsNullOrWhiteSpace(tag))
-            .Distinct(StringComparer.OrdinalIgnoreCase)
-            .ToList();
+        var parsedContent = ParseContent(note.Content);
+        note.Content = parsedContent.Content;
+        note.Tags = MergeTags(note.Tags, parsedContent.Tags);
 
         return note;
     }
 
+    private static string NormalizeSource(string source)
+    {
+        return source?.Trim() ?? string.Empty;
+    }
+
     private static List<string> ExtractTags(string content)
     {
-        return content
-            .Split(' ', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .Where(term => term.StartsWith('#') && term.Length > 1)
-            .Select(term => NormalizeTag(term[1..]))
+        return TagTokenRegex.Matches(content)
+            .Select(match => NormalizeTag(match.Groups["tag"].Value))
             .Where(tag => !string.IsNullOrWhiteSpace(tag))
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    private static ParsedContent ParseContent(string content)
+    {
+        return new ParsedContent
+        {
+            Content = StripTagsFromContent(content),
+            Tags = ExtractTags(content)
+        };
+    }
+
+    private static string StripTagsFromContent(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content))
+        {
+            return string.Empty;
+        }
+
+        var withoutTags = TagTokenRegex.Replace(content, static match => match.Groups[1].Value);
+        withoutTags = RepeatedSpacesRegex.Replace(withoutTags, " ");
+        withoutTags = SpacesAroundNewLineRegex.Replace(withoutTags, "$1");
+        return withoutTags.Trim();
     }
 
     private static string NormalizeTag(string tag)
     {
         return tag?.Trim().TrimStart('#').ToLowerInvariant() ?? string.Empty;
+    }
+
+    private static List<string> NormalizeTagList(IEnumerable<string> tags)
+    {
+        return tags?
+            .Select(NormalizeTag)
+            .Where(tag => !string.IsNullOrWhiteSpace(tag))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList() ?? [];
+    }
+
+    private static List<string> MergeTags(IEnumerable<string> existingTags, IEnumerable<string> additionalTags)
+    {
+        return NormalizeTagList((existingTags ?? []).Concat(additionalTags ?? []));
+    }
+
+    public static string BuildEditableContent(NoteItem note)
+    {
+        if (note is null)
+        {
+            return string.Empty;
+        }
+
+        var content = note.Content?.Trim() ?? string.Empty;
+        if (note.Tags is null || note.Tags.Count == 0)
+        {
+            return content;
+        }
+
+        var tagText = string.Join(" ", note.Tags.Select(tag => $"#{tag}"));
+        return string.IsNullOrWhiteSpace(content) ? tagText : $"{content} {tagText}";
+    }
+
+    private sealed class ParsedContent
+    {
+        public string Content { get; init; } = string.Empty;
+
+        public List<string> Tags { get; init; } = [];
     }
 }

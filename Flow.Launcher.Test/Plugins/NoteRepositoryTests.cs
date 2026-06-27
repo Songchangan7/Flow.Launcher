@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using NUnit.Framework;
 using NUnit.Framework.Legacy;
 using Flow.Launcher.Plugin.Note;
@@ -105,14 +106,15 @@ public class NoteRepositoryTests
         var repository = new NoteRepository(pluginDirectory, storageDirectory);
         repository.Load();
 
-        var result = repository.SaveNote("前端语境下，gutter是什么", out var savedNote, out var errorMessage);
+        const string expectedContent = "前端语境下，gutter是什么";
+        var result = repository.SaveNote(expectedContent, out var savedNote, out var errorMessage);
         var json = File.ReadAllText(repository.NotesFilePath);
 
         ClassicAssert.IsTrue(result);
         ClassicAssert.AreEqual(string.Empty, errorMessage);
         ClassicAssert.IsNotNull(savedNote);
-        ClassicAssert.AreEqual("前端语境下，gutter是什么", savedNote.Content);
-        ClassicAssert.IsTrue(json.Contains("前端语境下，gutter是什么"));
+        ClassicAssert.AreEqual(expectedContent, savedNote.Content);
+        ClassicAssert.IsTrue(json.Contains(expectedContent));
         ClassicAssert.IsFalse(json.Contains("\\u524D"));
     }
 
@@ -561,7 +563,7 @@ public class NoteRepositoryTests
     }
 
     [Test]
-    public void GivenTaggedNoteWhenSaveNoteThenExtractsTags()
+    public void GivenTaggedNoteWhenSaveNoteThenStripsTagsFromContentAndExtractsTags()
     {
         var pluginDirectory = Path.Combine(_testRoot, "plugin");
         var storageDirectory = Path.Combine(_testRoot, "storage");
@@ -575,9 +577,11 @@ public class NoteRepositoryTests
 
         ClassicAssert.IsTrue(result);
         ClassicAssert.AreEqual(string.Empty, errorMessage);
+        ClassicAssert.AreEqual("ship plugin", savedNote.Content);
         ClassicAssert.AreEqual(2, savedNote.Tags.Count);
         ClassicAssert.IsTrue(savedNote.Tags.Contains("flow"));
         ClassicAssert.IsTrue(savedNote.Tags.Contains("note"));
+        ClassicAssert.IsFalse(File.ReadAllText(repository.NotesFilePath).Contains("#flow"));
     }
 
     [Test]
@@ -692,7 +696,91 @@ public class NoteRepositoryTests
         var notes = repository.GetNotesByTag("work", 10);
 
         ClassicAssert.AreEqual(1, notes.Count);
-        ClassicAssert.AreEqual("active work note #work", notes[0].Content);
+        ClassicAssert.AreEqual("active work note", notes[0].Content);
+    }
+
+    [Test]
+    public void GivenTaggedContentWhenUpdateNoteThenStripsTagsFromContentAndPersistsTagsOnly()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "before",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.UpdateNote("note-1", "question body #frontend", out var updatedNote, out var errorMessage);
+        var json = File.ReadAllText(repository.NotesFilePath);
+
+        ClassicAssert.IsTrue(result);
+        ClassicAssert.AreEqual(string.Empty, errorMessage);
+        ClassicAssert.AreEqual("question body", updatedNote.Content);
+        ClassicAssert.AreEqual(1, updatedNote.Tags.Count);
+        ClassicAssert.IsTrue(updatedNote.Tags.Contains("frontend"));
+        ClassicAssert.IsFalse(json.Contains("#frontend"));
+        ClassicAssert.IsTrue(json.Contains("\"Tags\": ["));
+    }
+
+    [Test]
+    public void GivenLegacyTaggedContentWhenLoadThenNormalizesContentAndKeepsTags()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "问题：前端语境下，如何定义出外层和内层 #前端",
+                "CreatedAt": "2026-06-23T13:00:36.7454032Z",
+                "UpdatedAt": "2026-06-23T13:00:36.7454032Z",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": [ "前端" ]
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+
+        repository.Load();
+
+        ClassicAssert.AreEqual(1, repository.Notes.Count);
+        ClassicAssert.AreEqual("问题：前端语境下，如何定义出外层和内层", repository.Notes[0].Content);
+        ClassicAssert.AreEqual(1, repository.Notes[0].Tags.Count);
+        ClassicAssert.AreEqual("前端", repository.Notes[0].Tags[0]);
+    }
+
+    [Test]
+    public void GivenExistingTaggedNoteWhenBuildEditableContentThenAppendsTagsBackForEditing()
+    {
+        var note = new NoteItem
+        {
+            Id = "note-1",
+            Content = "问题：前端语境下，如何定义出外层和内层",
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow,
+            Tags = [ "前端", "布局" ]
+        };
+
+        var editableContent = NoteRepository.BuildEditableContent(note);
+
+        ClassicAssert.AreEqual("问题：前端语境下，如何定义出外层和内层 #前端 #布局", editableContent);
     }
 
     [Test]
@@ -810,5 +898,406 @@ public class NoteRepositoryTests
         ClassicAssert.AreEqual(1, result.CurrentNoteCount);
         ClassicAssert.AreEqual("stay here", repository.Notes[0].Content);
         ClassicAssert.IsTrue(File.ReadAllText(Path.Combine(storageDirectory, "notes.json")).Contains("stay here"));
+    }
+
+    [Test]
+    public void GivenMixedNotesWhenGetAllNotesWithoutLimitThenReturnsAllIncludingArchived()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "active note",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": []
+              },
+              {
+                "Id": "note-2",
+                "Content": "archived note",
+                "CreatedAt": "2026-06-15T00:00:00Z",
+                "UpdatedAt": "2026-06-15T00:00:00Z",
+                "IsPinned": false,
+                "IsArchived": true,
+                "Tags": []
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var limitedNotes = repository.GetAllNotes(10);
+        var allNotes = repository.GetAllNotes();
+
+        ClassicAssert.AreEqual(1, limitedNotes.Count);
+        ClassicAssert.AreEqual("active note", limitedNotes[0].Content);
+        ClassicAssert.AreEqual(2, allNotes.Count);
+        ClassicAssert.AreEqual("active note", allNotes[0].Content);
+        ClassicAssert.AreEqual("archived note", allNotes[1].Content);
+    }
+
+    [Test]
+    public void GivenExternalFileChangeWhenReloadThenRefreshesInMemoryNotes()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "before reload",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "after reload",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-17T00:00:00Z",
+                "IsPinned": false
+              }
+            ]
+            """);
+
+        repository.Reload();
+
+        ClassicAssert.AreEqual(string.Empty, repository.LoadError);
+        ClassicAssert.AreEqual(1, repository.Notes.Count);
+        ClassicAssert.AreEqual("after reload", repository.Notes[0].Content);
+    }
+
+    [Test]
+    public void GivenExistingNoteWhenSetTagsThenUpdatesTagsWithoutChangingContent()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "keep this body",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false,
+                "Tags": [ "old" ]
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.SetTags("note-1", [ "#Work ", "work", "idea" ], out var updatedNote, out var errorMessage);
+        var json = File.ReadAllText(repository.NotesFilePath);
+
+        ClassicAssert.IsTrue(result);
+        ClassicAssert.AreEqual(string.Empty, errorMessage);
+        ClassicAssert.AreEqual("keep this body", updatedNote.Content);
+        ClassicAssert.AreEqual(2, updatedNote.Tags.Count);
+        ClassicAssert.IsTrue(updatedNote.Tags.Contains("work"));
+        ClassicAssert.IsTrue(updatedNote.Tags.Contains("idea"));
+        ClassicAssert.IsFalse(json.Contains("#Work"));
+        ClassicAssert.IsTrue(json.Contains("\"work\""));
+    }
+
+    [Test]
+    public void GivenTagsSetIndependentlyWhenUpdateNoteWithoutHashTagsThenPreservesExistingTags()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "note-1",
+                "Content": "draft",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false,
+                "Tags": []
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        ClassicAssert.IsTrue(repository.SetTags("note-1", [ "planning" ], out _, out _));
+
+        var result = repository.UpdateNote("note-1", "draft updated", out var updatedNote, out var errorMessage);
+
+        ClassicAssert.IsTrue(result);
+        ClassicAssert.AreEqual(string.Empty, errorMessage);
+        ClassicAssert.AreEqual("draft updated", updatedNote.Content);
+        ClassicAssert.AreEqual(1, updatedNote.Tags.Count);
+        ClassicAssert.IsTrue(updatedNote.Tags.Contains("planning"));
+    }
+
+    [Test]
+    public void GivenUnknownNoteWhenSetTagsThenReturnsError()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var result = repository.SetTags("missing", [ "work" ], out var updatedNote, out var errorMessage);
+
+        ClassicAssert.IsFalse(result);
+        ClassicAssert.IsNull(updatedNote);
+        ClassicAssert.AreEqual("Note not found.", errorMessage);
+    }
+
+    [Test]
+    public void GivenWeekRangeWhenGetNotesCreatedThisWeekThenReturnsNotesInCurrentWeekOnly()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+
+        var (weekStart, _) = NoteRepository.GetCurrentWeekRangeLocal();
+        var inWeekCreatedAt = weekStart.AddDays(1).AddHours(9).ToUniversalTime();
+        var outWeekCreatedAt = weekStart.AddDays(-1).AddHours(9).ToUniversalTime();
+
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            $$"""
+            [
+              {
+                "Id": "note-in-week",
+                "Content": "inside week",
+                "CreatedAt": "{{inWeekCreatedAt:O}}",
+                "UpdatedAt": "{{inWeekCreatedAt:O}}",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": []
+              },
+              {
+                "Id": "note-last-week",
+                "Content": "outside week",
+                "CreatedAt": "{{outWeekCreatedAt:O}}",
+                "UpdatedAt": "{{outWeekCreatedAt:O}}",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": []
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var notes = repository.GetNotesCreatedThisWeek(10);
+
+        ClassicAssert.AreEqual(1, notes.Count);
+        ClassicAssert.AreEqual("inside week", notes[0].Content);
+    }
+
+    [Test]
+    public void GivenExportedTextFormatWhenSplitThenStripsMetadataAndSplitsBySeparator()
+    {
+        var content = """
+            创建时间 2026-06-16 10:00
+            更新时间 2026-06-16 10:00
+            标签 #work
+            first note
+
+            ----------------------------------------
+
+            创建时间 2026-06-16 11:00
+            更新时间 2026-06-16 11:00
+            标签
+            second note
+            """;
+
+        var chunks = NoteTextImportParser.Split(content, NotesTextImportSplitMode.DashSeparator);
+
+        ClassicAssert.AreEqual(2, chunks.Count);
+        ClassicAssert.AreEqual("first note", chunks[0]);
+        ClassicAssert.AreEqual("second note", chunks[1]);
+    }
+
+    [Test]
+    public void GivenMarkdownExportFormatWhenSplitThenStripsMetadata()
+    {
+        var content = """
+            ## 1. Title one
+
+            - **创建时间** 2026-06-16 10:00
+            - **更新时间** 2026-06-16 10:00
+            - **标签** #idea
+
+            markdown body
+
+            ## 2. Title two
+
+            - **Created** 2026-06-16 11:00
+            - **Updated** 2026-06-16 11:00
+            - **Tags** #work
+
+            another body
+            """;
+
+        var chunks = NoteTextImportParser.Split(content, NotesTextImportSplitMode.MarkdownHeading);
+
+        ClassicAssert.AreEqual(2, chunks.Count);
+        ClassicAssert.AreEqual("markdown body", chunks[0]);
+        ClassicAssert.AreEqual("another body", chunks[1]);
+    }
+
+    [Test]
+    public void GivenDuplicateContentWhenImportTextNotesWithSkipThenSkipsDuplicate()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        File.WriteAllText(Path.Combine(pluginDirectory, "notes.sample.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+        ClassicAssert.IsTrue(repository.SaveNote("existing note", out _, out _));
+
+        var result = repository.ImportTextNotes(["existing note", "new note"], skipDuplicates: true);
+
+        ClassicAssert.IsTrue(result.Succeeded);
+        ClassicAssert.AreEqual(1, result.ImportedCount);
+        ClassicAssert.AreEqual(1, result.SkippedDuplicateCount);
+        ClassicAssert.AreEqual(2, repository.GetAllNotes().Count);
+        ClassicAssert.IsTrue(repository.GetAllNotes().Any(note => note.Content == "new note"));
+    }
+
+    [Test]
+    public void GivenJsonFileWhenImportJsonNotesThenMergesById()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        File.WriteAllText(Path.Combine(pluginDirectory, "notes.sample.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+        ClassicAssert.IsTrue(repository.SaveNote("local note", out _, out _));
+
+        var importPath = Path.Combine(_testRoot, "import.json");
+        File.WriteAllText(importPath,
+            """
+            [
+              {
+                "Id": "imported-note",
+                "Content": "from json",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": []
+              }
+            ]
+            """);
+
+        var result = repository.ImportJsonNotes(importPath);
+
+        ClassicAssert.IsTrue(result.Succeeded);
+        ClassicAssert.AreEqual(1, result.ImportedCount);
+        ClassicAssert.AreEqual(2, repository.GetAllNotes().Count);
+        ClassicAssert.IsTrue(repository.GetAllNotes().Any(note => note.Content == "from json"));
+    }
+
+    [Test]
+    public void GivenLegacyNotesWithoutExtensionFieldsWhenLoadThenUsesDefaults()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        Directory.CreateDirectory(storageDirectory);
+        File.WriteAllText(Path.Combine(storageDirectory, "notes.json"),
+            """
+            [
+              {
+                "Id": "legacy-note",
+                "Content": "legacy content",
+                "CreatedAt": "2026-06-16T00:00:00Z",
+                "UpdatedAt": "2026-06-16T00:00:00Z",
+                "IsPinned": false,
+                "IsArchived": false,
+                "Tags": []
+              }
+            ]
+            """);
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        var note = repository.GetAllNotes().Single();
+        ClassicAssert.AreEqual(string.Empty, note.Source);
+        ClassicAssert.IsNull(note.LastViewedAt);
+    }
+
+    [Test]
+    public void GivenSaveNoteWithSourceWhenPersistThenSourceIsWritten()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        File.WriteAllText(Path.Combine(pluginDirectory, "notes.sample.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+
+        ClassicAssert.IsTrue(repository.SaveNote("editor note", out _, out _, NoteSources.Editor));
+
+        repository.Reload();
+        var note = repository.GetAllNotes().Single();
+        ClassicAssert.AreEqual(NoteSources.Editor, note.Source);
+    }
+
+    [Test]
+    public void GivenRecordLastViewedWhenCalledThenUpdatesTimestampWithoutChangingUpdatedAt()
+    {
+        var pluginDirectory = Path.Combine(_testRoot, "plugin");
+        var storageDirectory = Path.Combine(_testRoot, "storage");
+        Directory.CreateDirectory(pluginDirectory);
+        File.WriteAllText(Path.Combine(pluginDirectory, "notes.sample.json"), "[]");
+
+        var repository = new NoteRepository(pluginDirectory, storageDirectory);
+        repository.Load();
+        ClassicAssert.IsTrue(repository.SaveNote("viewed note", out var savedNote, out _));
+
+        var updatedAt = savedNote.UpdatedAt;
+        ClassicAssert.IsTrue(repository.RecordLastViewed(savedNote.Id, out _));
+
+        repository.Reload();
+        var note = repository.GetAllNotes().Single();
+        ClassicAssert.IsNotNull(note.LastViewedAt);
+        ClassicAssert.AreEqual(updatedAt, note.UpdatedAt);
     }
 }

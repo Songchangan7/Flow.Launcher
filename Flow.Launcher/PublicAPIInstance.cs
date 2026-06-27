@@ -140,6 +140,24 @@ namespace Flow.Launcher
             Notification.ShowWithButton(title, buttonText, buttonAction, subTitle, iconPath);
         }
 
+        public void ShowMainWindowNotification(string title, string subTitle = "", bool isError = false, int durationMs = 2200, bool hideMainWindowAfter = false)
+        {
+            if (_mainVM.MainWindowVisibilityStatus)
+            {
+                _mainVM.ShowMainWindowNotification(title, subTitle, isError, durationMs, hideMainWindowAfter);
+                return;
+            }
+
+            if (isError)
+            {
+                ShowMsgError(title, subTitle);
+            }
+            else
+            {
+                ShowMsg(title, subTitle);
+            }
+        }
+
         public void OpenSettingDialog()
         {
             Application.Current.Dispatcher.Invoke(() =>

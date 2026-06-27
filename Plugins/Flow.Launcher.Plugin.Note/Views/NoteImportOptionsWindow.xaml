@@ -1,0 +1,61 @@
+<Window
+    x:Class="Flow.Launcher.Plugin.Note.Views.NoteImportOptionsWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="{DynamicResource flowlauncher_plugin_note_settings_notes_import_options_title}"
+    Width="520"
+    Height="360"
+    MinWidth="420"
+    MinHeight="320"
+    Background="{DynamicResource PopupBGColor}"
+    Foreground="{DynamicResource PopupTextColor}"
+    ResizeMode="CanResize"
+    WindowStartupLocation="CenterScreen">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            Grid.Row="0"
+            Margin="0,0,0,12"
+            Text="{DynamicResource flowlauncher_plugin_note_settings_notes_import_options_hint}"
+            TextWrapping="Wrap" />
+
+        <TextBlock
+            Grid.Row="1"
+            Margin="0,0,0,8"
+            FontWeight="SemiBold"
+            Text="{DynamicResource flowlauncher_plugin_note_settings_notes_import_split_label}" />
+
+        <StackPanel x:Name="SplitModePanel" Grid.Row="2" Margin="0,0,0,16" />
+
+        <CheckBox
+            x:Name="SkipDuplicatesCheckBox"
+            Grid.Row="3"
+            Margin="0,0,0,12"
+            Content="{DynamicResource flowlauncher_plugin_note_settings_notes_import_skip_duplicates}"
+            IsChecked="True" />
+
+        <StackPanel
+            Grid.Row="5"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <Button
+                x:Name="CancelButton"
+                MinWidth="96"
+                Margin="0,0,8,0"
+                Click="CancelEdit" />
+            <Button
+                x:Name="ConfirmButton"
+                MinWidth="96"
+                Click="ConfirmEdit"
+                Style="{DynamicResource AccentButtonStyle}" />
+        </StackPanel>
+    </Grid>
+</Window>

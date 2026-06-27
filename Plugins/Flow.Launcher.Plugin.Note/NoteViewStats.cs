@@ -11,6 +11,8 @@ internal sealed class NoteViewStats
 
     public int TodayNotesCount { get; init; }
 
+    public int WeekNotesCount { get; init; }
+
     public int RecentNotesCount { get; init; }
 
     public int ArchivedNotesCount { get; init; }
@@ -25,6 +27,7 @@ internal sealed class NoteViewStats
             TotalNotesCount = allNotesCount,
             PinnedNotesCount = repository.GetPinnedNotes(browseNotesLimit).Count,
             TodayNotesCount = repository.GetNotesCreatedOn(DateTime.Now, browseNotesLimit).Count,
+            WeekNotesCount = repository.GetNotesCreatedThisWeek(browseNotesLimit).Count,
             RecentNotesCount = Math.Min(repository.GetRecentNotes(browseNotesLimit).Count, browseNotesLimit),
             ArchivedNotesCount = repository.GetArchivedNotes(browseNotesLimit).Count,
             TopTags = repository.GetTopTags(tagListLimit)

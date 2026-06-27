@@ -40,6 +40,18 @@ internal static class NoteSpecialViewResolver
             };
         }
 
+        if (NoteSpecialViewKeywords.IsWeek(trimmedContent))
+        {
+            var notes = repository.GetNotesCreatedThisWeek(browseNotesLimit);
+            return new NoteSpecialView
+            {
+                Key = NoteSpecialViewKeywords.Week,
+                Title = Localize.flowlauncher_plugin_note_special_week_title(),
+                Subtitle = Localize.flowlauncher_plugin_note_special_week_subtitle(notes.Count),
+                Notes = notes
+            };
+        }
+
         if (NoteSpecialViewKeywords.IsRecent(trimmedContent))
         {
             var notes = repository.GetRecentNotes(browseNotesLimit);

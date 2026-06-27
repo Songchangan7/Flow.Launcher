@@ -391,6 +391,65 @@
                 </ContentControl>
             </Grid>
 
+            <Border
+                x:Name="InlineNotificationBanner"
+                Margin="12 8 12 0"
+                Padding="10 8"
+                CornerRadius="10"
+                Visibility="{Binding InlineNotificationVisibility}">
+                <Border.Style>
+                    <Style TargetType="Border">
+                        <Setter Property="Background" Value="{DynamicResource InlineToastSuccessBackground}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource InlineToastSuccessBorder}" />
+                        <Setter Property="BorderThickness" Value="1" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding InlineNotificationIsError}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource InlineToastErrorBackground}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource InlineToastErrorBorder}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock
+                        FontSize="13"
+                        FontWeight="SemiBold"
+                        Text="{Binding InlineNotificationTitle}"
+                        TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource InlineToastSuccessForeground}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding InlineNotificationIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource InlineToastErrorForeground}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                    <TextBlock
+                        Margin="0 2 0 0"
+                        FontSize="12"
+                        Opacity="0.9"
+                        Text="{Binding InlineNotificationSubTitle}"
+                        TextWrapping="Wrap">
+                        <TextBlock.Style>
+                            <Style TargetType="TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource InlineToastSuccessForeground}" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding InlineNotificationIsError}" Value="True">
+                                        <Setter Property="Foreground" Value="{DynamicResource InlineToastErrorForeground}" />
+                                    </DataTrigger>
+                                    <DataTrigger Binding="{Binding InlineNotificationSubTitle}" Value="">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBlock.Style>
+                    </TextBlock>
+                </StackPanel>
+            </Border>
+
             <Border x:Name="ResultPreviewAreaBoarder" Style="{DynamicResource WindowRadius}">
                 <Border.Clip>
                     <MultiBinding Converter="{StaticResource BorderClipConverter}">

@@ -1,24 +1,24 @@
 param(
-    [string]$BuildOutput = "D:\Flow.Launcher\Output\Debug",
-    [string]$FlowRoot = "$env:LOCALAPPDATA\FlowLauncher\app-2.1.3",
-    [string]$PluginName = "Flow.Launcher.Plugin.Note",
+    [string]$BuildOutput = "D:\Creta\Output\Debug",
+    [string]$FlowRoot = "$env:LOCALAPPDATA\Creta\app-2.1.3",
+    [string]$PluginName = "Creta.Plugin.BrowserBookmark",
     [switch]$Restart
 )
 
 $managedFiles = @(
-    "Flow.Launcher.dll",
-    "Flow.Launcher.pdb",
-    "Flow.Launcher.Core.dll",
-    "Flow.Launcher.Core.pdb",
-    "Flow.Launcher.Infrastructure.dll",
-    "Flow.Launcher.Infrastructure.pdb",
+    "Creta.dll",
+    "Creta.pdb",
+    "Creta.Core.dll",
+    "Creta.Core.pdb",
+    "Creta.Infrastructure.dll",
+    "Creta.Infrastructure.pdb",
     "Flow.Launcher.Plugin.dll",
     "Flow.Launcher.Plugin.pdb"
 )
 
 $pluginSource = Join-Path $BuildOutput "Plugins\$PluginName"
 $pluginTarget = Join-Path $FlowRoot "Plugins\$PluginName"
-$flowExe = Join-Path $FlowRoot "Flow.Launcher.exe"
+$flowExe = Join-Path $FlowRoot "Creta.exe"
 
 Write-Host "Build output: $BuildOutput"
 Write-Host "Flow root: $FlowRoot"
@@ -31,12 +31,12 @@ if (-not (Test-Path -LiteralPath $BuildOutput)) {
 }
 
 if (-not (Test-Path -LiteralPath $FlowRoot)) {
-    Write-Error "Installed Flow Launcher directory does not exist."
+    Write-Error "Installed Creta directory does not exist."
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $flowExe)) {
-    Write-Error "Flow.Launcher.exe was not found in the installed directory."
+    Write-Error "Creta.exe was not found in the installed directory."
     exit 1
 }
 
@@ -66,20 +66,20 @@ Get-ChildItem -LiteralPath $pluginSource -Force | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $pluginTarget -Recurse -Force
 }
 
-$mainHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $FlowRoot "Flow.Launcher.dll")).Hash
+$mainHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $FlowRoot "Creta.dll")).Hash
 $pluginHash = (Get-FileHash -Algorithm SHA256 -LiteralPath (Join-Path $pluginTarget "$PluginName.dll")).Hash
 
-Write-Host "Deployed Flow.Launcher.dll hash: $mainHash"
+Write-Host "Deployed Creta.dll hash: $mainHash"
 Write-Host "Deployed $PluginName.dll hash: $pluginHash"
 Write-Host "Safe deploy completed. Startup files were not touched."
 
 if ($Restart) {
-    $process = Get-Process -Name Flow.Launcher -ErrorAction SilentlyContinue
+    $process = Get-Process -Name Creta -ErrorAction SilentlyContinue
     if ($process) {
         Stop-Process -Id $process.Id -Force
         Start-Sleep -Seconds 2
     }
 
     Start-Process -FilePath $flowExe -WindowStyle Hidden
-    Write-Host "Flow Launcher restarted."
+    Write-Host "Creta restarted."
 }

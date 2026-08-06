@@ -12,7 +12,7 @@ assignees: ''
 Click on the line number in GitHub to create an anchored link to the corresponding code section. For example:
 
 
-https://github.com/Flow-Launcher/Flow.Launcher/blob/master/Flow.Launcher/Storage/TopMostRecord.cs#L8
+https://github.com/Songchangan7/creta/blob/master/Creta/Storage/TopMostRecord.cs#L8
 
 Provide your alternative implementation idea:
 

@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package>
+  <metadata>
+    <id>Creta</id>
+    <title>Creta</title>
+    <version>$version$</version>
+    <authors>Creta Team</authors>
+    <projectUrl>https://github.com/Songchangan7/creta</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/Creta/Creta/master/Creta/Images/app.png</iconUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>Creta - Quick file search and app launcher for Windows with community-made plugins</description>
+  </metadata>
+  <files>
+    <file src="**\*.*" target="lib\net9.0\" exclude="Creta.vshost.exe;Creta.vshost.exe.config;Creta.vshost.exe.manifest;*.nupkg;Setup.exe;RELEASES"/>
+  </files>
+</package>

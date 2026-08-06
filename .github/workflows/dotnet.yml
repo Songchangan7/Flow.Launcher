@@ -21,7 +21,7 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v6
-      - name: Set Flow.Launcher.csproj version
+      - name: Set Creta.csproj version
         id: update
         uses: vers-one/dotnet-project-version-updater@v1.8
         with:
@@ -34,9 +34,9 @@ jobs:
           dotnet-version: 9.0.x
 #          cache: true
 #          cache-dependency-path: |
-#            Flow.Launcher/packages.lock.json
-#            Flow.Launcher.Core/packages.lock.json            
-#            Flow.Launcher.Infrastructure/packages.lock.json
+#            Creta/packages.lock.json
+#            Creta.Core/packages.lock.json            
+#            Creta.Infrastructure/packages.lock.json
 #            Flow.Launcher.Plugin/packages.lock.json
       - name: Install vpk
         run: dotnet tool install -g vpk
@@ -65,21 +65,21 @@ jobs:
         with:
           name: Flow Installer
           path: |
-            Output\Packages\Flow-Launcher-*.exe
+            Output\Packages\Creta-*.exe
           compression-level: 0
       - name: Upload Portable Version
         uses: actions/upload-artifact@v7
         with:
           name: Portable Version
           path: |
-            Output\Packages\Flow-Launcher-Portable.zip
+            Output\Packages\Creta-Portable.zip
           compression-level: 0
       - name: Upload Full Nupkg
         uses: actions/upload-artifact@v7
         with:
           name: Full nupkg
           path: |
-            Output\Packages\FlowLauncher-*-full.nupkg
+            Output\Packages\Creta-*-full.nupkg
 
           compression-level: 0
       - name: Upload Release Information

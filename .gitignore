@@ -285,7 +285,7 @@ paket-files/
 # New to Visual Studio
 *.VC.db
 
-## Flow Launcher specific
+## Creta specific
 Output/*
 /Python.Runtime.dll
 Thumbs.db

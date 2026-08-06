@@ -6,7 +6,7 @@ Write-Host "Config: $config"
 
 function Build-Version {
     if ([string]::IsNullOrEmpty($env:flowVersion)) {
-        $targetPath = Join-Path $solution "Output/Release/Flow.Launcher.dll" -Resolve
+        $targetPath = Join-Path $solution "Output/Release/Creta.dll" -Resolve
         $v = (Get-Command ${targetPath}).FileVersionInfo.FileVersion
     } else {
         $v = $env:flowVersion
@@ -50,8 +50,8 @@ function Delete-Unused ($path, $config) {
 function Remove-CreateDumpExe ($path, $config) {
     $target = "$path\Output\$config"
 
-    $depjson = Get-Content $target\Flow.Launcher.deps.json -raw
-    $depjson -replace '(?s)(.createdump.exe": {.*?}.*?\n)\s*', "" | Out-File $target\Flow.Launcher.deps.json -Encoding UTF8
+    $depjson = Get-Content $target\Creta.deps.json -raw
+    $depjson -replace '(?s)(.createdump.exe": {.*?}.*?\n)\s*', "" | Out-File $target\Creta.deps.json -Encoding UTF8
     Remove-Item -Path $target -Include "*createdump.exe" -Recurse
 }
 
@@ -65,7 +65,7 @@ function Pack-Squirrel-Installer ($path, $version, $output) {
     # msbuild based installer generation is not working in appveyor, not sure why
     Write-Host "Begin pack squirrel installer"
 
-    $spec = "$path\Scripts\flowlauncher.nuspec"
+    $spec = "$path\Scripts\creta.nuspec"
     $input = "$path\Output\Release"
 
     Write-Host "Packing: $spec"
@@ -74,9 +74,9 @@ function Pack-Squirrel-Installer ($path, $version, $output) {
     # dotnet pack is not used because ran into issues, need to test installation and starting up if to use it.
     nuget pack $spec -Version $version -BasePath $input -OutputDirectory $output -Properties Configuration=Release
 
-    $nupkg = "$output\FlowLauncher.$version.nupkg"
+    $nupkg = "$output\Creta.$version.nupkg"
     Write-Host "nupkg path: $nupkg"
-    $icon = "$path\Flow.Launcher\Resources\app.ico"
+    $icon = "$path\Creta\Resources\app.ico"
     Write-Host "icon: $icon"
     # Squirrel.com: https://github.com/Squirrel/Squirrel.Windows/issues/369
     New-Alias Squirrel $env:USERPROFILE\.nuget\packages\squirrel.windows\1.9.0\tools\Squirrel.exe -Force
@@ -88,7 +88,7 @@ function Pack-Squirrel-Installer ($path, $version, $output) {
     Move-Item $temp\* $output -Force
     Remove-Item $temp
 
-    $file = "$output\Flow-Launcher-Setup.exe"
+    $file = "$output\Creta-Setup.exe"
     Write-Host "Filename: $file"
 
     Move-Item "$output\Setup.exe" $file -Force
@@ -98,8 +98,8 @@ function Pack-Squirrel-Installer ($path, $version, $output) {
 
 function Publish-Self-Contained ($p) {
 
-    $csproj  = Join-Path "$p" "Flow.Launcher/Flow.Launcher.csproj" -Resolve
-    $profile = Join-Path "$p" "Flow.Launcher/Properties/PublishProfiles/Net9.0-SelfContained.pubxml" -Resolve
+    $csproj  = Join-Path "$p" "Creta/Creta.csproj" -Resolve
+    $profile = Join-Path "$p" "Creta/Properties/PublishProfiles/Net9.0-SelfContained.pubxml" -Resolve
 
     # we call dotnet publish on the main project. 
     # The other projects should have been built in Release at this point.
@@ -108,9 +108,9 @@ function Publish-Self-Contained ($p) {
 
 function Publish-Portable ($outputLocation, $version) {
 
-    & $outputLocation\Flow-Launcher-Setup.exe --silent | Out-Null
-    mkdir "$env:LocalAppData\FlowLauncher\app-$version\UserData"
-    Compress-Archive -Path $env:LocalAppData\FlowLauncher -DestinationPath $outputLocation\Flow-Launcher-Portable.zip
+    & $outputLocation\Creta-Setup.exe --silent | Out-Null
+    mkdir "$env:LocalAppData\Creta\app-$version\UserData"
+    Compress-Archive -Path $env:LocalAppData\Creta -DestinationPath $outputLocation\Creta-Portable.zip
 }
 
 function Main {

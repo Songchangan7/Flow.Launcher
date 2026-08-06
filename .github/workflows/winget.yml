@@ -9,5 +9,5 @@ jobs:
     steps:
       - uses: vedantmgoyal2009/winget-releaser@v2
         with:
-          identifier: Flow-Launcher.Flow-Launcher
+          identifier: Creta.Creta
           token: ${{ secrets.WINGET_TOKEN }}

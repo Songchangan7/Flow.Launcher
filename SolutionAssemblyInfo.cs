@@ -1,18 +1,18 @@
-﻿using System.Reflection;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 #if DEBUG
 
 [assembly: AssemblyConfiguration("Debug")]
-[assembly: AssemblyDescription("Debug build, https://github.com/Flow-Launcher/Flow.Launcher")]
+[assembly: AssemblyDescription("Debug build, https://github.com/Songchangan7/creta")]
 #else
 [assembly: AssemblyConfiguration("Release")]
-[assembly: AssemblyDescription("Release build, https://github.com/Flow-Launcher/Flow.Launcher")]
+[assembly: AssemblyDescription("Release build, https://github.com/Songchangan7/creta")]
 #endif
 
-[assembly: AssemblyTitle("Flow Launcher")]
-[assembly: AssemblyCompany("Flow Launcher")]
-[assembly: AssemblyProduct("Flow Launcher")]
+[assembly: AssemblyTitle("Creta")]
+[assembly: AssemblyCompany("Creta")]
+[assembly: AssemblyProduct("Creta")]
 [assembly: AssemblyCopyright("The MIT License (MIT)")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

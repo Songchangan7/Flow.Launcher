@@ -1,0 +1,10 @@
+using System.Collections.Generic;
+using System.Threading;
+
+namespace Creta.Plugin.Explorer.Search.IProvider
+{
+    public interface IContentIndexProvider
+    {
+        public IAsyncEnumerable<SearchResult> ContentSearchAsync(string plainSearch, string contentSearch, CancellationToken token = default);
+    }
+}

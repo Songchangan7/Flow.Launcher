@@ -1,0 +1,12 @@
+namespace Creta.Plugin.Calculator;
+
+public class Settings
+{
+    public DecimalSeparator DecimalSeparator { get; set; } = DecimalSeparator.UseSystemLocale;
+
+    public int MaxDecimalPlaces { get; set; } = 10;
+
+    public bool ShowErrorMessage { get; set; } = false;
+
+    public bool UseThousandsSeparator { get; set; } = true;
+}

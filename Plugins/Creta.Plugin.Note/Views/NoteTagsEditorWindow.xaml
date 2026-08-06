@@ -1,0 +1,51 @@
+<Window
+    x:Class="Creta.Plugin.Note.Views.NoteTagsEditorWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="{DynamicResource creta_plugin_note_settings_notes_tags_editor_title}"
+    Width="520"
+    Height="260"
+    MinWidth="420"
+    MinHeight="220"
+    Background="{DynamicResource PopupBGColor}"
+    Foreground="{DynamicResource PopupTextColor}"
+    ResizeMode="CanResize"
+    WindowStartupLocation="CenterScreen">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock
+            x:Name="HintTextBlock"
+            Grid.Row="0"
+            Margin="0,0,0,12"
+            Text="{DynamicResource creta_plugin_note_settings_notes_tags_editor_hint}"
+            TextWrapping="Wrap" />
+
+        <TextBox
+            x:Name="TagsTextBox"
+            Grid.Row="1"
+            AcceptsReturn="False"
+            VerticalContentAlignment="Center" />
+
+        <StackPanel
+            Grid.Row="2"
+            Margin="0,16,0,0"
+            HorizontalAlignment="Right"
+            Orientation="Horizontal">
+            <Button
+                x:Name="CancelButton"
+                MinWidth="96"
+                Margin="0,0,8,0"
+                Click="CancelEdit" />
+            <Button
+                x:Name="ConfirmButton"
+                MinWidth="96"
+                Click="ConfirmEdit"
+                Style="{DynamicResource AccentButtonStyle}" />
+        </StackPanel>
+    </Grid>
+</Window>

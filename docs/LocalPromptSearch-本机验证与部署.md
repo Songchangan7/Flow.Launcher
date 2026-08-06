@@ -4,13 +4,13 @@
 
 当前机器上已经确认：
 
-- 已安装 Flow Launcher，安装目录为：
-  - `C:\Users\Administrator\AppData\Local\FlowLauncher\app-2.1.3`
+- 已安装 Creta，安装目录为：
+  - `C:\Users\Administrator\AppData\Local\Creta\app-2.1.3`
 - 内置插件目录为：
-  - `C:\Users\Administrator\AppData\Local\FlowLauncher\app-2.1.3\Plugins`
+  - `C:\Users\Administrator\AppData\Local\Creta\app-2.1.3\Plugins`
 - 已安装 Visual Studio 自带的 `MSBuild.exe`
 
-但当前机器缺少可用的 `.NET SDK`，因此暂时无法把 `Flow.Launcher.Plugin.LocalPromptSearch` 编译成可部署的插件产物。
+但当前机器缺少可用的 `.NET SDK`，因此暂时无法把 `Creta.Plugin.BrowserBookmark` 编译成可部署的插件产物。
 
 ## 为什么现在还不能直接验证
 
@@ -25,20 +25,20 @@
 
 这意味着：
 
-- 现在不能只把源码目录复制到 Flow Launcher 的 `Plugins` 目录
+- 现在不能只把源码目录复制到 Creta 的 `Plugins` 目录
 - 必须先完成编译，生成 `.dll`、`.deps.json`、`plugin.json` 等文件后，才能部署
 
 ## 插件正确的部署形态
 
-Flow Launcher 需要的是“编译后的插件目录”，而不是源码目录。
+Creta 需要的是“编译后的插件目录”，而不是源码目录。
 
 目标目录结构应类似：
 
 ```text
-Flow.Launcher.Plugin.LocalPromptSearch/
-  Flow.Launcher.Plugin.LocalPromptSearch.dll
-  Flow.Launcher.Plugin.LocalPromptSearch.deps.json
-  Flow.Launcher.Plugin.LocalPromptSearch.pdb
+Creta.Plugin.BrowserBookmark/
+  Creta.Plugin.BrowserBookmark.dll
+  Creta.Plugin.BrowserBookmark.deps.json
+  Creta.Plugin.BrowserBookmark.pdb
   plugin.json
   prompts.json
   prompts.sample.json
@@ -51,7 +51,7 @@ Flow.Launcher.Plugin.LocalPromptSearch/
 当前插件源码位于：
 
 ```text
-D:\Flow.Launcher\Plugins\Flow.Launcher.Plugin.LocalPromptSearch
+D:\Creta\Plugins\Creta.Plugin.BrowserBookmark
 ```
 
 ## 预期构建输出目录
@@ -59,7 +59,7 @@ D:\Flow.Launcher\Plugins\Flow.Launcher.Plugin.LocalPromptSearch
 根据项目文件配置，`Debug` 构建产物应输出到：
 
 ```text
-D:\Flow.Launcher\Output\Debug\Plugins\Flow.Launcher.Plugin.LocalPromptSearch
+D:\Creta\Output\Debug\Plugins\Creta.Plugin.BrowserBookmark
 ```
 
 ## 正确的本机验证路径
@@ -79,7 +79,7 @@ dotnet --info
 推荐命令：
 
 ```powershell
-dotnet build D:\Flow.Launcher\Plugins\Flow.Launcher.Plugin.LocalPromptSearch\Flow.Launcher.Plugin.LocalPromptSearch.csproj -c Debug
+dotnet build D:\Creta\Plugins\Creta.Plugin.BrowserBookmark\Creta.Plugin.BrowserBookmark.csproj -c Debug
 ```
 
 ### 3. 确认输出目录
@@ -87,18 +87,18 @@ dotnet build D:\Flow.Launcher\Plugins\Flow.Launcher.Plugin.LocalPromptSearch\Flo
 确认下面目录存在：
 
 ```text
-D:\Flow.Launcher\Output\Debug\Plugins\Flow.Launcher.Plugin.LocalPromptSearch
+D:\Creta\Output\Debug\Plugins\Creta.Plugin.BrowserBookmark
 ```
 
-### 4. 部署到本机安装版 Flow Launcher
+### 4. 部署到本机安装版 Creta
 
 把整个输出目录复制到：
 
 ```text
-C:\Users\Administrator\AppData\Local\FlowLauncher\app-2.1.3\Plugins\Flow.Launcher.Plugin.LocalPromptSearch
+C:\Users\Administrator\AppData\Local\Creta\app-2.1.3\Plugins\Creta.Plugin.BrowserBookmark
 ```
 
-### 5. 重启 Flow Launcher
+### 5. 重启 Creta
 
 重启后测试：
 

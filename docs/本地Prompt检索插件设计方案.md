@@ -2,7 +2,7 @@
 
 ## 1. 目标
 
-设计一个 Flow Launcher 插件，让用户在搜索框中输入关键字后，能够快速检索本地预设的 Prompt 模板，并一键复制到剪贴板，随后直接粘贴到 ChatGPT、Claude、Gemini、通义千问等 AI 平台中使用。
+设计一个 Creta 插件，让用户在搜索框中输入关键字后，能够快速检索本地预设的 Prompt 模板，并一键复制到剪贴板，随后直接粘贴到 ChatGPT、Claude、Gemini、通义千问等 AI 平台中使用。
 
 这个插件的核心价值是：
 
@@ -15,7 +15,7 @@
 
 ### 场景 1：快速调用写作模板
 
-用户打开 Flow Launcher，输入：
+用户打开 Creta，输入：
 
 ```text
 pt 写周报
@@ -105,10 +105,10 @@ pt 关键词
 
 ### 5.1 主流程
 
-1. 用户按 `Alt + Space` 打开 Flow Launcher
+1. 用户按 `Alt + Space` 打开 Creta
 2. 输入 `pt 关键词`
 3. 插件从本地模板库中搜索匹配项
-4. Flow Launcher 展示匹配结果
+4. Creta 展示匹配结果
 5. 用户按回车
 6. 插件将模板正文复制到系统剪贴板
 7. 用户切换到 AI 平台粘贴使用
@@ -273,7 +273,7 @@ pt 周报
 
 推荐优先使用 `C#` 插件实现，原因是：
 
-- 与 Flow Launcher 主项目技术栈一致
+- 与 Creta 主项目技术栈一致
 - 本地文件读取和剪贴板操作更直接
 - 启动速度和集成体验更稳定
 - 后续做设置面板更方便
@@ -287,7 +287,7 @@ pt 周报
 - 插件目录示例：
 
 ```text
-Plugins/Flow.Launcher.Plugin.LocalPromptSearch
+Plugins/Creta.Plugin.BrowserBookmark
 ```
 
 ### 9.3 核心模块划分
@@ -308,7 +308,7 @@ Plugins/Flow.Launcher.Plugin.LocalPromptSearch
   - 保存是否启用最近使用、收藏等选项
 
 - `Main`
-  - 接收 Flow Launcher 查询
+  - 接收 Creta 查询
   - 返回结果列表
   - 处理回车动作
 
@@ -364,7 +364,7 @@ pt 翻译
 可以提供一个默认模板库路径，例如：
 
 ```text
-%APPDATA%/FlowLauncher/Plugins/LocalPromptSearch/prompts.json
+%APPDATA%/Creta/Plugins/LocalPromptSearch/prompts.json
 ```
 
 或者：

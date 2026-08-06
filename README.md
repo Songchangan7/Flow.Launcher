@@ -1,17 +1,17 @@
 <p align="center">
-        <a href="https://flowlauncher.com">
+        <a href="https://creta.com">
         	<img src="https://user-images.githubusercontent.com/6903107/207167068-2196d2a3-2caa-4856-958b-a780fbda95c6.gif" width="500">
         </a><br />
         <img src="https://user-images.githubusercontent.com/6903107/207168016-85d0dd16-1f3b-4d42-9d37-0e0d5a596ead.png" width="400">
 </p>
 <p align="center">
 <img src="https://img.shields.io/maintenance/yes/3000">
-<a href="https://crowdin.com/project/flow-launcher"><img src="https://badges.crowdin.net/flow-launcher/localized.svg"></a>
-<a href="https://ci.appveyor.com/project/JohnTheGr8/flow-launcher/branch/dev"><img src="https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true&retina=true"></a>
-<a href="https://github.com/Flow-Launcher/Flow.Launcher/releases"><img src="https://img.shields.io/github/downloads/Flow-Launcher/Flow.Launcher/total.svg"></a><br />
-<img src="https://img.shields.io/github/release-date/Flow-Launcher/Flow.Launcher">
-<a href="https://github.com/Flow-Launcher/Flow.Launcher/releases/latest"><img src="https://img.shields.io/github/v/release/Flow-Launcher/Flow.Launcher"></a>
-<a href="https://flowlauncher.com/docs"><img src="https://img.shields.io/badge/Documentation-7389D8"></a>
+<a href="https://crowdin.com/project/creta"><img src="https://badges.crowdin.net/creta/localized.svg"></a>
+<a href="https://ci.appveyor.com/project/JohnTheGr8/creta/branch/dev"><img src="https://ci.appveyor.com/api/projects/status/32r7s2skrgm9ubva?svg=true&retina=true"></a>
+<a href="https://github.com/Songchangan7/creta/releases"><img src="https://img.shields.io/github/downloads/Creta/Creta/total.svg"></a><br />
+<img src="https://img.shields.io/github/release-date/Creta/Creta">
+<a href="https://github.com/Songchangan7/creta/releases/latest"><img src="https://img.shields.io/github/v/release/Creta/Creta"></a>
+<a href="https://creta.com/docs"><img src="https://img.shields.io/badge/Documentation-7389D8"></a>
 <a href="https://discord.gg/AvgAQgh"><img src="https://img.shields.io/discord/727828229250875472?color=7389D8&labelColor=6A7EC2&label=Community&logo=discord&logoColor=white"></a>
 </p>
 
@@ -34,17 +34,17 @@ Dedicated to making your workflow more seamless. Search everything from applicat
   <a href="#sponsors">Sponsors</a> •
   <a href="#-questionssuggestions">Questions/Suggestions</a> •
   <a href="#development">Development</a> •
-  <a href="https://flowlauncher.com/docs">Docs</a>
+  <a href="https://creta.com/docs">Docs</a>
 </h4>
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
 ## 📣 Official Channels
 
-- Website: [https://flowlauncher.com](https://flowlauncher.com)
-- GitHub Organization: [https://github.com/Flow-Launcher](https://github.com/Flow-Launcher)
+- Website: [https://creta.com](https://creta.com)
+- GitHub Organization: [https://github.com/Creta](https://github.com/Creta)
 - Discord: [https://discord.gg/AvgAQgh](https://discord.gg/AvgAQgh)
-- Reddit: [https://www.reddit.com/r/FlowLauncher/](https://www.reddit.com/r/FlowLauncher/)
+- Reddit: [https://www.reddit.com/r/Creta/](https://www.reddit.com/r/Creta/)
 
 ⚠️ Only trust official channels for downloads and announcements, and be careful of similar-looking domains.
 
@@ -56,29 +56,29 @@ For installation, use the official methods listed below.
 
 ### Installation
 
-[Windows 10+ Installer](https://github.com/Flow-Launcher/Flow.Launcher/releases/latest/download/Flow-Launcher-Setup.exe) or [Portable Version](https://github.com/Flow-Launcher/Flow.Launcher/releases/latest/download/Flow-Launcher-Portable.zip)
+[Windows 10+ Installer](https://github.com/Songchangan7/creta/releases/latest/download/Creta-Setup.exe) or [Portable Version](https://github.com/Songchangan7/creta/releases/latest/download/Creta-Portable.zip)
 
 #### Winget
 
 ```
-winget install "Flow Launcher"
+winget install "Creta"
 ```
 
 #### Scoop
 
 ```
-scoop install Flow-Launcher
+scoop install Creta
 ```
 
 #### Chocolatey
 
 ```
-choco install Flow-Launcher
+choco install Creta
 ```
 
 > When installing for the first time Windows may raise an issue about security due to code not being signed, if you downloaded from this repo then you are good to continue the set up.
 
-Or download the [early access version](https://github.com/Flow-Launcher/Prereleases/releases).
+Or download the [early access version](https://github.com/Creta/Prereleases/releases).
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
@@ -187,7 +187,7 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 - Supports languages from Chinese to Italian and more.
 - Supports Pinyin (拼音) search.
-- [Crowdin](https://crowdin.com/project/flow-launcher) support for language translations.
+- [Crowdin](https://crowdin.com/project/creta) support for language translations.
 
 <details>
 <summary>Supported languages</summary>
@@ -225,8 +225,8 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 - Fully portable.
 - Type `flow user data` to open your saved user settings folder. They are located at:
-  - If using roaming: `%APPDATA%\FlowLauncher`
-  - If using portable, by default: `%localappdata%\FlowLauncher\app-<VersionOfYourFlowLauncher>\UserData`
+  - If using roaming: `%APPDATA%\Creta`
+  - If using portable, by default: `%localappdata%\Creta\app-<VersionOfYourCreta>\UserData`
   - Type `open log location` to open your logs folder, they are saved along with your user settings folder.
 
 ### 🎮 Game Mode
@@ -241,15 +241,15 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 ## 📦 Plugins
 
-- Support wide range of plugins. Visit [here](https://www.flowlauncher.com/plugins/) for our plugin portfolio.
+- Support wide range of plugins. Visit [here](https://www.creta.com/plugins/) for our plugin portfolio.
 - Publish your own plugin to Flow! Create plugins in:
 
 <p align="center">
-<a href="https://flowlauncher.com/docs/#/develop-dotnet-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870065-4096f233-147c-434e-a3ac-69519582605f.png" width="64"></a>
-<a href="https://github.com/Flow-Launcher/plugin-samples/tree/master/HelloWorldFSharp"><img src="https://user-images.githubusercontent.com/26427004/156536959-dfdc7be8-4b59-4587-9c6a-a297903e4ce1.png" width="64"></a>
-<a href="https://www.flowlauncher.com/docs/#/py-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870066-7599eb15-0333-468e-82e8-4d432ceb5a45.png" width="64"></a>
-<a href="https://flowlauncher.com/docs/#/nodejs-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870071-d67c736b-0748-428f-a283-14587696dfa3.png" width="64"></a>
-<a href="https://flowlauncher.com/docs/#/nodejs-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870069-9bde6fe6-d50c-4d85-8fde-fe5ae921ab8c.png" width="64"></a>
+<a href="https://creta.com/docs/#/develop-dotnet-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870065-4096f233-147c-434e-a3ac-69519582605f.png" width="64"></a>
+<a href="https://github.com/Creta/plugin-samples/tree/master/HelloWorldFSharp"><img src="https://user-images.githubusercontent.com/26427004/156536959-dfdc7be8-4b59-4587-9c6a-a297903e4ce1.png" width="64"></a>
+<a href="https://www.creta.com/docs/#/py-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870066-7599eb15-0333-468e-82e8-4d432ceb5a45.png" width="64"></a>
+<a href="https://creta.com/docs/#/nodejs-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870071-d67c736b-0748-428f-a283-14587696dfa3.png" width="64"></a>
+<a href="https://creta.com/docs/#/nodejs-develop-plugins"><img src="https://user-images.githubusercontent.com/6903107/147870069-9bde6fe6-d50c-4d85-8fde-fe5ae921ab8c.png" width="64"></a>
 </p>
 
 ### [SpotifyPremium](https://github.com/fow5040/Flow.Launcher.Plugin.SpotifyPremium)
@@ -268,7 +268,7 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 <img src="https://user-images.githubusercontent.com/6903107/144533538-3caa2944-3037-4755-87b9-70fa918d2efa.png" width="400">
 
-### [Colors](https://github.com/Flow-Launcher/Flow.Launcher.Plugin.Color)
+### [Colors](https://github.com/Songchangan7/creta.Plugin.Color)
 
 <img src="https://user-images.githubusercontent.com/6903107/144533487-2caff162-a8f6-4577-af3f-d1b05d423ee4.png" width="400">
 
@@ -280,13 +280,13 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 <img src="https://user-images.githubusercontent.com/6903107/144533517-07bf011f-726c-4221-8657-0e442eca8a82.png" width="400">
 
-......and [more!](https://flowlauncher.com/docs/#/plugins)
+......and [more!](https://creta.com/docs/#/plugins)
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
 ### 🛒 Plugin Store
 
-<img src="https://cdn.jsdelivr.net/gh/Flow-Launcher/Flow.Launcher.PluginsManifest@plugin_api_v2/assets/plugin_store.png" width="700">
+<img src="https://cdn.jsdelivr.net/gh/Flow-Launcher/Flow.PluginsManifest@plugin_api_v2/assets/plugin_store.png" width="700">
 
 - You can view the full plugin list or quickly install a plugin via the Plugin Store menu inside Settings
 
@@ -333,29 +333,29 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 | Hibernate                          | Hibernate computer                                                          |
 | Empty Recycle Bin                  | Empty recycle bin                                                           |
 | Open Recycle Bin                   | Open recycle bin                                                            |
-| Exit                               | Close Flow Launcher                                                         |
-| Save Settings                      | Save all Flow Launcher settings                                             |
-| Restart Flow Launcher              | Restart Flow Launcher                                                       |
+| Exit                               | Close Creta                                                         |
+| Save Settings                      | Save all Creta settings                                             |
+| Restart Creta              | Restart Creta                                                       |
 | Settings                           | Tweak this app                                                              |
 | Reload Plugin Data                 | Refreshes plugin data with new content                                      |
-| Check For Update                   | Check for new Flow Launcher update                                          |
-| Open Log Location                  | Open Flow Launcher's log location                                           |
+| Check For Update                   | Check for new Creta update                                          |
+| Open Log Location                  | Open Creta's log location                                           |
 | Index Option                       | Open Windows Search Index window                                            |
-| Flow Launcher Tips                 | Visit Flow Launcher's documentation for more help and usage tips            |
-| Flow Launcher UserData Folder      | Open the location where Flow Launcher's settings are stored                 |
+| Creta Tips                 | Visit Creta's documentation for more help and usage tips            |
+| Creta UserData Folder      | Open the location where Creta's settings are stored                 |
 | Toggle Game Mode                   | Toggle Game Mode                                                            |
-| Set Flow Launcher Theme            | Set the Flow Launcher Theme                                                 |
+| Set Creta Theme            | Set the Creta Theme                                                 |
 
 ### 💁‍♂️ Tips
 
-- [More tips](https://flowlauncher.com/docs/#/usage-tips)
+- [More tips](https://creta.com/docs/#/usage-tips)
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
 ## Sponsors
 <p align="center">
   <a href="https://coderabbit.ai/">
-    <img src="https://github.com/Flow-Launcher/Flow.Launcher/assets/6903107/7c996d74-0c69-4011-922f-a95ca7e874b0" width="30%" alt="Coderabbit Logo" />
+    <img src="https://github.com/Songchangan7/creta/assets/6903107/7c996d74-0c69-4011-922f-a95ca7e874b0" width="30%" alt="Coderabbit Logo" />
   </a>
   <br />
   <br />
@@ -386,14 +386,14 @@ Or download the [early access version](https://github.com/Flow-Launcher/Prerelea
 
 ### Mentions
 
-- [Why I Chose to Support Flow-Launcher](https://dev.to/appwrite/appwrite-loves-open-source-why-i-chose-to-support-flow-launcher-54pj) - Appwrite
-- [Softpedia Editor's Pick](https://www.softpedia.com/get/System/Launchers-Shutdown-Tools/Flow-Launcher.shtml)
+- [Why I Chose to Support Creta](https://dev.to/appwrite/appwrite-loves-open-source-why-i-chose-to-support-creta-54pj) - Appwrite
+- [Softpedia Editor's Pick](https://www.softpedia.com/get/System/Launchers-Shutdown-Tools/Creta.shtml)
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
 ## ❔ Questions/Suggestions
 
-Yes please, let us know in the [Q&A](https://github.com/Flow-Launcher/Flow.Launcher/discussions/categories/q-a) section. **Join our community on [Discord](https://discord.gg/AvgAQgh)!**
+Yes please, let us know in the [Q&A](https://github.com/Songchangan7/creta/discussions/categories/q-a) section. **Join our community on [Discord](https://discord.gg/AvgAQgh)!**
 
 <img src="https://user-images.githubusercontent.com/6903107/144858082-8b654daf-60fb-4ee6-89b2-6183b73510d1.png" width="100%">
 
@@ -401,7 +401,7 @@ Yes please, let us know in the [Q&A](https://github.com/Flow-Launcher/Flow.Launc
 
 ### Localization
 
-Our project localization is based on [Crowdin](https://crowdin.com). If you would like to change them, please go to https://crowdin.com/project/flow-launcher.
+Our project localization is based on [Crowdin](https://crowdin.com). If you would like to change them, please go to https://crowdin.com/project/creta.
 
 ### WPF UI Library
 
@@ -419,15 +419,15 @@ Each of the pull requests will be marked with a milestone indicating the planned
 
 ### Contributing
 
-Contributions are very welcome, in addition to the main project (C#) there are also [documentation](https://github.com/Flow-Launcher/docs) (md), [website](https://github.com/Flow-Launcher/flow-launcher.github.io) (html/css) and [others](https://github.com/Flow-Launcher) that can be contributed to. If you are unsure of a change you want to make, let us know in the [Discussions](https://github.com/Flow-Launcher/Flow.Launcher/discussions/categories/ideas), otherwise feel free to submit a pull request.
+Contributions are very welcome, in addition to the main project (C#) there are also [documentation](https://github.com/Creta/docs) (md), [website](https://github.com/Creta/creta.github.io) (html/css) and [others](https://github.com/Creta) that can be contributed to. If you are unsure of a change you want to make, let us know in the [Discussions](https://github.com/Songchangan7/creta/discussions/categories/ideas), otherwise feel free to submit a pull request.
 
-You will find the main goals of Flow placed under the [Projects board](https://github.com/orgs/Flow-Launcher/projects/4), so feel free to contribute on that. If you would like to make small incremental changes, feel free to do so as well.
+You will find the main goals of Flow placed under the [Projects board](https://github.com/orgs/Creta/projects/4), so feel free to contribute on that. If you would like to make small incremental changes, feel free to do so as well.
 
-Get in touch if you would like to join the Flow-Launcher Team and help build this great tool.
+Get in touch if you would like to join the Creta Team and help build this great tool.
 
 ### Developing/Debugging
 
-- Flow Launcher's target framework is .Net 9
+- Creta's target framework is .Net 9
 
 - Install Visual Studio 2022 (v17.12+)
 
